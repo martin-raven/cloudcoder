@@ -401,14 +401,66 @@ export function createSkillCommand({
 }
 
 /**
- * Loads skills from a /skills/ directory path.
- * Only supports directory format: skill-name/SKILL.md
+ * Recursively finds nested SKILL.md files under a /skills/ directory.
+ * Ignores markdown files placed directly in the root /skills/ directory.
  */
-async function loadSkillsFromSkillsDir(
-  basePath: string,
-  source: SettingSource,
-): Promise<SkillWithPath[]> {
+async function findSkillMarkdownFiles(basePath: string): Promise<string[]> {
   const fs = getFsImplementation()
+  const visitedDirs = new Set<string>()
+  const skillFiles: string[] = []
+
+  async function walk(skillDirPath: string): Promise<void> {
+    const dirId = await getFileIdentity(skillDirPath)
+    if (dirId && visitedDirs.has(dirId)) {
+      return
+    }
+    if (dirId) {
+      visitedDirs.add(dirId)
+    }
+
+    let entries
+    try {
+      entries = await fs.readdir(skillDirPath)
+    } catch (e: unknown) {
+      if (!isFsInaccessible(e)) {
+        logForDebugging(`[skills] failed to read directory ${skillDirPath}: ${e}`, {
+          level: 'warn',
+        })
+      }
+      return
+    }
+
+    const childDirs: string[] = []
+    for (const entry of entries) {
+      const entryPath = join(skillDirPath, entry.name)
+
+      if (isSkillFile(entryPath)) {
+        skillFiles.push(entryPath)
+        continue
+      }
+
+      if (entry.isDirectory()) {
+        childDirs.push(entryPath)
+        continue
+      }
+
+      if (entry.isSymbolicLink()) {
+        try {
+          if ((await fs.stat(entryPath)).isDirectory()) {
+            childDirs.push(entryPath)
+          }
+        } catch (e: unknown) {
+          if (!isENOENT(e) && !isFsInaccessible(e)) {
+            logForDebugging(`[skills] failed to stat ${entryPath}: ${e}`, {
+              level: 'warn',
+            })
+          }
+        }
+      }
+    }
+
+    await Promise.all(childDirs.map(walk))
+  }
 
   let entries
   try {
@@ -418,17 +470,50 @@ async function loadSkillsFromSkillsDir(
     return []
   }
 
-  const results = await Promise.all(
-    entries.map(async (entry): Promise<SkillWithPath | null> => {
-      try {
-        // Only support directory format: skill-name/SKILL.md
-        if (!entry.isDirectory() && !entry.isSymbolicLink()) {
-          // Single .md files are NOT supported in /skills/ directory
-          return null
-        }
+  const topLevelDirs: string[] = []
+  for (const entry of entries) {
+    const entryPath = join(basePath, entry.name)
 
-        const skillDirPath = join(basePath, entry.name)
-        const skillFilePath = join(skillDirPath, 'SKILL.md')
+    if (entry.isDirectory()) {
+      topLevelDirs.push(entryPath)
+      continue
+    }
+
+    if (entry.isSymbolicLink()) {
+      try {
+        if ((await fs.stat(entryPath)).isDirectory()) {
+          topLevelDirs.push(entryPath)
+        }
+      } catch (e: unknown) {
+        if (!isENOENT(e) && !isFsInaccessible(e)) {
+          logForDebugging(`[skills] failed to stat ${entryPath}: ${e}`, {
+            level: 'warn',
+          })
+        }
+      }
+    }
+  }
+
+  await Promise.all(topLevelDirs.map(walk))
+  skillFiles.sort()
+  return skillFiles
+}
+
+/**
+ * Loads skills from a /skills/ directory path.
+ * Supports nested directory format: category/skill/SKILL.md
+ */
+async function loadSkillsFromSkillsDir(
+  basePath: string,
+  source: SettingSource,
+): Promise<SkillWithPath[]> {
+  const fs = getFsImplementation()
+  const skillFiles = await findSkillMarkdownFiles(basePath)
+
+  const results = await Promise.all(
+    skillFiles.map(async (skillFilePath): Promise<SkillWithPath | null> => {
+      try {
+        const skillDirPath = dirname(skillFilePath)
 
         let content: string
         try {
@@ -449,7 +534,7 @@ async function loadSkillsFromSkillsDir(
           skillFilePath,
         )
 
-        const skillName = entry.name
+        const skillName = getSkillCommandName(skillFilePath, basePath)
         const parsed = parseSkillFrontmatterFields(
           frontmatter,
           markdownContent,
