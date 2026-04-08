@@ -1,6 +1,18 @@
-# OpenClaude Advanced Setup
+# Cloud Coder Advanced Setup
+
+> **Note:** Cloud Coder is a fork of [OpenClaude](https://github.com/Gitlawb/openclaude), building on its multi-provider foundation with a focus on hybrid cloud/local inference through Ollama Cloud.
 
 This guide is for users who want source builds, Bun workflows, provider profiles, diagnostics, or more control over runtime behavior.
+
+## Why Cloud Coder + Ollama Cloud?
+
+Cloud Coder is designed to give you the **power of cloud-scale LLMs with the affordability of local inference**:
+
+- **Cloud models (480B+ parameters)**: Run on Ollama's datacenter infrastructure via the `:cloud` suffix (e.g., `qwen3.5:397b-cloud`, `glm-5:cloud`)
+- **Local models**: Run on your own hardware for quick, low-latency tasks
+- **Hybrid workflow**: Use cloud models for complex reasoning and large codebases, fall back to local models for simple edits
+
+This approach lets you access state-of-the-art model capabilities without needing expensive GPU hardware, while keeping everyday tasks fast and cost-effective.
 
 ## Install Options
 
@@ -80,7 +92,7 @@ export OPENAI_MODEL=google/gemini-2.0-flash-001
 
 OpenRouter model availability changes over time. If a model stops working, try another current OpenRouter model before assuming the integration is broken.
 
-### Ollama
+### Ollama (Local)
 
 ```bash
 ollama pull llama3.3:70b
@@ -89,6 +101,40 @@ export CLAUDE_CODE_USE_OPENAI=1
 export OPENAI_BASE_URL=http://localhost:11434/v1
 export OPENAI_MODEL=llama3.3:70b
 ```
+
+**Note:** When using Ollama, the `/model` command only shows models that are currently available on your Ollama server. Pull models with `ollama pull <model-name>` to make them appear in the picker. You can list installed models with `ollama list`.
+
+### Ollama Cloud Models
+
+Ollama cloud models run on Ollama's infrastructure, enabling you to use large models (480B+ parameters) that don't fit on local hardware.
+
+**Requirements:**
+- Sign in to Ollama: `ollama signin`
+- Cloud models are identified by the `:cloud` suffix (e.g., `qwen3.5:397b-cloud`, `glm-5:cloud`)
+
+```bash
+# Sign in first (required for cloud models)
+ollama signin
+
+# Then use cloud models
+export CLAUDE_CODE_USE_OPENAI=1
+export OPENAI_BASE_URL=http://localhost:11434/v1
+export OPENAI_API_KEY=ollama
+export OPENAI_MODEL=qwen3.5:397b-cloud
+```
+
+**Available cloud models:**
+- `qwen3.5:397b-cloud` - Qwen 3.5 Coder 480B
+- `qwen3.5:cloud` - Qwen 3.5
+- `deepseek-v3.2:cloud` - DeepSeek V3.2
+- `deepseek-v3:cloud` - DeepSeek V3
+- `glm-5:cloud` - GLM-5
+- `kimi-k2.5:cloud` - Kimi K2.5
+- `minimax-m2.5:cloud` - MiniMax M2.5
+- `minimax-m2.7:cloud` - MiniMax M2.7
+- `nemotron-3-super:cloud` - Nemotron 3 Super
+
+Cloud models appear in the `/model` picker with a ☁️ icon. If you see an authentication message, run `ollama signin` in your terminal and restart Cloud Code.
 
 ### Atomic Chat (local, Apple Silicon)
 

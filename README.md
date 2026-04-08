@@ -1,8 +1,10 @@
-# OpenClaude
+# Cloud Coder
 
-OpenClaude is an open-source coding-agent CLI for cloud and local model providers.
+> **Note:** Cloud Coder is a fork of [OpenClaude](https://github.com/Gitlawb/openclaude), building on its multi-provider foundation with a focus on hybrid cloud/local inference through Ollama Cloud.
 
-Use OpenAI-compatible APIs, Gemini, GitHub Models, Codex, Ollama, Atomic Chat, and other supported backends while keeping one terminal-first workflow: prompts, tools, agents, MCP, slash commands, and streaming output.
+Cloud Coder is an AI coding assistant that combines the power of cloud LLMs with affordable local inference through Ollama Cloud.
+
+Run large models (480B+ parameters) on Ollama's cloud infrastructure while using your own hardware for smaller tasks. One CLI across all backends: OpenAI-compatible APIs, Gemini, GitHub Models, Codex, Ollama (local and cloud), Atomic Chat, and more.
 
 [![PR Checks](https://github.com/Gitlawb/openclaude/actions/workflows/pr-checks.yml/badge.svg?branch=main)](https://github.com/Gitlawb/openclaude/actions/workflows/pr-checks.yml)
 [![Release](https://img.shields.io/github/v/tag/Gitlawb/openclaude?label=release&color=0ea5e9)](https://github.com/Gitlawb/openclaude/tags)
@@ -12,31 +14,31 @@ Use OpenAI-compatible APIs, Gemini, GitHub Models, Codex, Ollama, Atomic Chat, a
 
 [Quick Start](#quick-start) | [Setup Guides](#setup-guides) | [Providers](#supported-providers) | [Source Build](#source-build-and-local-development) | [VS Code Extension](#vs-code-extension) | [Community](#community)
 
-## Why OpenClaude
+## Why Cloud Coder
 
-- Use one CLI across cloud APIs and local model backends
-- Save provider profiles inside the app with `/provider`
-- Run with OpenAI-compatible services, Gemini, GitHub Models, Codex, Ollama, Atomic Chat, and other supported providers
-- Keep coding-agent workflows in one place: bash, file tools, grep, glob, agents, tasks, MCP, and web tools
-- Use the bundled VS Code extension for launch integration and theme support
+- **Cloud power, affordable hardware**: Run 480B+ parameter models on Ollama Cloud while using cheaper local hardware for everyday tasks
+- **One CLI for all backends**: OpenAI, Gemini, GitHub Models, Codex, Ollama (local and cloud), Atomic Chat, and more
+- **Save provider profiles** inside the app with `/provider`
+- **Complete agent workflows**: bash, file tools, grep, glob, agents, tasks, MCP, and web tools
+- **VS Code extension** for launch integration and theme support
 
 ## Quick Start
 
 ### Install
 
 ```bash
-npm install -g @gitlawb/openclaude
+npm install -g cloudcoder
 ```
 
-If the install later reports `ripgrep not found`, install ripgrep system-wide and confirm `rg --version` works in the same terminal before starting OpenClaude.
+If the install later reports `ripgrep not found`, install ripgrep system-wide and confirm `rg --version` works in the same terminal before starting Cloud Coder.
 
 ### Start
 
 ```bash
-openclaude
+cloudcoder
 ```
 
-Inside OpenClaude:
+Inside Cloud Coder:
 
 - run `/provider` for guided provider setup and saved profiles
 - run `/onboard-github` for GitHub Models onboarding
@@ -50,7 +52,7 @@ export CLAUDE_CODE_USE_OPENAI=1
 export OPENAI_API_KEY=sk-your-key-here
 export OPENAI_MODEL=gpt-4o
 
-openclaude
+cloudcoder
 ```
 
 Windows PowerShell:
@@ -60,7 +62,7 @@ $env:CLAUDE_CODE_USE_OPENAI="1"
 $env:OPENAI_API_KEY="sk-your-key-here"
 $env:OPENAI_MODEL="gpt-4o"
 
-openclaude
+cloudcoder
 ```
 
 ### Fastest local Ollama setup
@@ -72,7 +74,7 @@ export CLAUDE_CODE_USE_OPENAI=1
 export OPENAI_BASE_URL=http://localhost:11434/v1
 export OPENAI_MODEL=qwen2.5-coder:7b
 
-openclaude
+cloudcoder
 ```
 
 Windows PowerShell:
@@ -82,8 +84,19 @@ $env:CLAUDE_CODE_USE_OPENAI="1"
 $env:OPENAI_BASE_URL="http://localhost:11434/v1"
 $env:OPENAI_MODEL="qwen2.5-coder:7b"
 
-openclaude
+cloudcoder
 ```
+
+### Fastest Ollama Cloud setup
+
+Cloud Coder defaults to Ollama Cloud on first run, giving you access to powerful models without needing expensive local hardware:
+
+```bash
+ollama signin  # Required once for cloud models
+cloudcoder     # Starts with glm-5:cloud by default
+```
+
+Cloud models run on Ollama's infrastructure, so you get datacenter-grade inference for large models (480B+) while your local machine handles lighter tasks. This hybrid approach keeps costs low without sacrificing capability.
 
 ## Setup Guides
 
@@ -106,7 +119,7 @@ Advanced and source-build guides:
 | Gemini | `/provider` or env vars | Supports API key, access token, or local ADC workflow on current `main` |
 | GitHub Models | `/onboard-github` | Interactive onboarding with saved credentials |
 | Codex | `/provider` | Uses existing Codex credentials when available |
-| Ollama | `/provider` or env vars | Local inference with no API key |
+| Ollama | `/provider` or env vars | Local inference with no API key; cloud models (`:cloud` suffix) require `ollama signin`. The `/model` command shows only models installed on your Ollama server (`ollama list` to view, `ollama pull` to add) |
 | Atomic Chat | advanced setup | Local Apple Silicon backend |
 | Bedrock / Vertex / Foundry | env vars | Additional provider integrations for supported environments |
 
@@ -117,22 +130,24 @@ Advanced and source-build guides:
 - **Tool calling**: Multi-step tool loops with model calls, tool execution, and follow-up responses
 - **Images**: URL and base64 image inputs for providers that support vision
 - **Provider profiles**: Guided setup plus saved `.openclaude-profile.json` support
-- **Local and remote model backends**: Cloud APIs, local servers, and Apple Silicon local inference
+- **Hybrid cloud/local backends**: Cloud APIs via Ollama Cloud for heavy models, local servers for lightweight tasks, Apple Silicon inference
 
 ## Provider Notes
 
-OpenClaude supports multiple providers, but behavior is not identical across all of them.
+Cloud Coder supports multiple providers, but behavior is not identical across all of them.
 
 - Anthropic-specific features may not exist on other providers
 - Tool quality depends heavily on the selected model
 - Smaller local models can struggle with long multi-step tool flows
-- Some providers impose lower output caps than the CLI defaults, and OpenClaude adapts where possible
+- Some providers impose lower output caps than the CLI defaults, and Cloud Coder adapts where possible
 
 For best results, use models with strong tool/function calling support.
 
+**Recommended workflow**: Use Ollama Cloud models (e.g., `qwen3.5:397b-cloud`, `glm-5:cloud`) for complex reasoning and large codebases. Fall back to local models for quick edits and latency-sensitive tasks.
+
 ## Agent Routing
 
-OpenClaude can route different agents to different models through settings-based routing. This is useful for cost optimization or splitting work by model strength.
+Cloud Coder can route different agents to different models through settings-based routing. This is useful for cost optimization or splitting work by model strength.
 
 Add to `~/.claude/settings.json`:
 
@@ -168,7 +183,7 @@ By default, `WebSearch` works on non-Anthropic models using DuckDuckGo. This giv
 
 > **Note:** DuckDuckGo fallback works by scraping search results and may be rate-limited, blocked, or subject to DuckDuckGo's Terms of Service. If you want a more reliable supported option, configure Firecrawl.
 
-For Anthropic-native backends and Codex responses, OpenClaude keeps the native provider web search behavior.
+For Anthropic-native backends and Codex responses, Cloud Coder keeps the native provider web search behavior.
 
 `WebFetch` works, but its basic HTTP plus HTML-to-markdown path can still fail on JavaScript-rendered sites or sites that block plain HTTP requests.
 
@@ -189,7 +204,7 @@ Free tier at [firecrawl.dev](https://firecrawl.dev) includes 500 credits. The ke
 
 ## Headless gRPC Server
 
-OpenClaude can be run as a headless gRPC service, allowing you to integrate its agentic capabilities (tools, bash, file editing) into other applications, CI/CD pipelines, or custom user interfaces. The server uses bidirectional streaming to send real-time text chunks, tool calls, and request permissions for sensitive commands.
+Cloud Coder can be run as a headless gRPC service, allowing you to integrate its agentic capabilities (tools, bash, file editing) into other applications, CI/CD pipelines, or custom user interfaces. The server uses bidirectional streaming to send real-time text chunks, tool calls, and request permissions for sensitive commands.
 
 ### 1. Start the gRPC Server
 
@@ -228,6 +243,8 @@ bun run build
 node dist/cli.mjs
 ```
 
+The built binary is available as `cloudcoder` (with `openclaude` as a compatibility alias).
+
 Helpful commands:
 
 - `bun run dev`
@@ -241,7 +258,7 @@ Helpful commands:
 
 ## Testing And Coverage
 
-OpenClaude uses Bun's built-in test runner for unit tests.
+Cloud Coder uses Bun's built-in test runner for unit tests.
 
 Run the full unit suite:
 
@@ -280,7 +297,7 @@ Recommended contributor validation before opening a PR:
 - `bun run test:coverage` for broader unit coverage when your change affects shared runtime or provider logic
 - focused `bun test ...` runs for the files and flows you changed
 
-Coverage output is written to `coverage/lcov.info`, and OpenClaude also generates a git-activity-style heatmap at `coverage/index.html`.
+Coverage output is written to `coverage/lcov.info`, and Cloud Coder also generates a git-activity-style heatmap at `coverage/index.html`.
 ## Repository Structure
 
 - `src/` - core CLI/runtime
@@ -289,11 +306,11 @@ Coverage output is written to `coverage/lcov.info`, and OpenClaude also generate
 - `python/` - standalone Python helpers and their tests
 - `vscode-extension/openclaude-vscode/` - VS Code extension
 - `.github/` - repo automation, templates, and CI configuration
-- `bin/` - CLI launcher entrypoints
+- `bin/` - CLI launcher entrypoints (`cloudcode` is the primary, `openclaude` for compatibility)
 
 ## VS Code Extension
 
-The repo includes a VS Code extension in [`vscode-extension/openclaude-vscode`](vscode-extension/openclaude-vscode) for OpenClaude launch integration, provider-aware control-center UI, and theme support.
+The repo includes a VS Code extension in [`vscode-extension/openclaude-vscode`](vscode-extension/openclaude-vscode) for Cloud Coder launch integration, provider-aware control-center UI, and theme support.
 
 ## Security
 
@@ -317,9 +334,9 @@ For larger changes, open an issue first so the scope is clear before implementat
 
 ## Disclaimer
 
-OpenClaude is an independent community project and is not affiliated with, endorsed by, or sponsored by Anthropic.
+Cloud Coder is an independent community project and is not affiliated with, endorsed by, or sponsored by Anthropic.
 
-OpenClaude originated from the Claude Code codebase and has since been substantially modified to support multiple providers and open use. "Claude" and "Claude Code" are trademarks of Anthropic PBC. See [LICENSE](LICENSE) for details.
+Cloud Coder is a fork of [OpenClaude](https://github.com/Gitlawb/openclaude), which itself originated from the Claude Code codebase. Cloud Coder has been substantially modified to support hybrid cloud/local inference through Ollama Cloud. "Claude" and "Claude Code" are trademarks of Anthropic PBC. See [LICENSE](LICENSE) for details.
 
 ## License
 
