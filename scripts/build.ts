@@ -62,7 +62,7 @@ const result = await Bun.build({
     'MACRO.BUILD_TIME': JSON.stringify(new Date().toISOString()),
     'MACRO.ISSUES_EXPLAINER':
       JSON.stringify('report the issue at https://github.com/anthropics/claude-code/issues'),
-    'MACRO.PACKAGE_URL': JSON.stringify('@gitlawb/openclaude'),
+    'MACRO.PACKAGE_URL': JSON.stringify('cloudcoder'),
     'MACRO.NATIVE_PACKAGE_URL': 'undefined',
   },
   plugins: [
@@ -392,4 +392,4 @@ if (!result.success) {
   process.exit(1)
 }
 
-console.log(`✓ Built openclaude v${version} → dist/cli.mjs`)
+console.log(`✓ Built cloudcoder v${version} → dist/cli.mjs`)

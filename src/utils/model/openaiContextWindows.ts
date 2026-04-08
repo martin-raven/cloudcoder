@@ -74,6 +74,18 @@ const OPENAI_CONTEXT_WINDOWS: Record<string, number> = {
   'llama3.2:1b':              128_000,
   'qwen3:8b':                 128_000,
   'codestral':                 32_768,
+
+  // Ollama cloud models (remote inference on ollama.com)
+  // These have large context windows since they run on datacenter hardware.
+  'qwen3.5:397b-cloud':       256_000,
+  'qwen3.5:cloud':            256_000,
+  'deepseek-v3.2:cloud':      256_000,
+  'deepseek-v3:cloud':        256_000,
+  'glm-5:cloud':              256_000,
+  'kimi-k2.5:cloud':          256_000,
+  'minimax-m2.5:cloud':       256_000,
+  'minimax-m2.7:cloud':       256_000,
+  'nemotron-3-super:cloud':   256_000,
 }
 
 /**
@@ -142,6 +154,17 @@ const OPENAI_MAX_OUTPUT_TOKENS: Record<string, number> = {
   'llama3.2:1b':                4_096,
   'qwen3:8b':                   8_192,
   'codestral':                   8_192,
+
+  // Ollama cloud models (conservative safe defaults)
+  'qwen3.5:397b-cloud':        32_768,
+  'qwen3.5:cloud':             32_768,
+  'deepseek-v3.2:cloud':       32_768,
+  'deepseek-v3:cloud':         32_768,
+  'glm-5:cloud':               32_768,
+  'kimi-k2.5:cloud':           32_768,
+  'minimax-m2.5:cloud':        32_768,
+  'minimax-m2.7:cloud':        32_768,
+  'nemotron-3-super:cloud':    32_768,
 }
 
 function lookupByModel<T>(table: Record<string, T>, model: string): T | undefined {

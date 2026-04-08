@@ -16,7 +16,7 @@ Usage (.env):
 import httpx
 import logging
 import os
-from typing import AsyncIterator
+from typing import AsyncIterator, TypedDict
 
 logger = logging.getLogger(__name__)
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
@@ -29,6 +29,59 @@ async def check_ollama_running() -> bool:
             return resp.status_code == 200
     except Exception:
         return False
+
+
+def is_cloud_model(model_name: str) -> bool:
+    """
+    Check if a model is a cloud model by examining the Ollama tag portion.
+    Only the tag after the colon is checked to avoid false positives on
+    model names that happen to end in "-cloud".
+    """
+    tag = model_name.rsplit(":", 1)[-1] if ":" in model_name else ""
+    return tag == "cloud" or tag.endswith("-cloud")
+
+
+class CloudAuthStatus(TypedDict):
+    authenticated: bool
+    needs_signin: bool
+    has_cloud_models: bool
+
+
+async def check_ollama_cloud_auth() -> CloudAuthStatus:
+    """
+    Check if user is authenticated with Ollama for cloud model access.
+
+    NOTE: Authentication is inferred indirectly — if cloud models appear
+    in the /api/tags response, we assume the user is signed in. This
+    heuristic could break if Ollama changes behavior (e.g., listing cloud
+    models but returning auth errors on use).
+    """
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
+            if resp.status_code != 200:
+                return {
+                    "authenticated": False,
+                    "needs_signin": True,
+                    "has_cloud_models": False,
+                }
+
+            data = resp.json()
+            models = data.get("models", [])
+            has_cloud = any(
+                is_cloud_model(m.get("name", "")) for m in models
+            )
+            return {
+                "authenticated": has_cloud,
+                "needs_signin": not has_cloud,
+                "has_cloud_models": has_cloud,
+            }
+    except Exception:
+        return {
+            "authenticated": False,
+            "needs_signin": False,
+            "has_cloud_models": False,
+        }
 
 
 async def list_ollama_models() -> list[str]:

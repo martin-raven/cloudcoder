@@ -127,6 +127,18 @@ export async function hasLocalOllama(baseUrl?: string): Promise<boolean> {
   }
 }
 
+/**
+ * Check if a model is a cloud model by examining the Ollama tag portion.
+ * Cloud models use the :cloud tag or a tag ending in -cloud
+ * (e.g., "glm-5:cloud", "qwen3.5:397b-cloud").
+ * Only the tag after the colon is examined to avoid false positives
+ * on model names that happen to end in "-cloud".
+ */
+export function isCloudModel(modelName: string): boolean {
+  const tag = modelName.includes(':') ? modelName.split(':').pop() ?? '' : ''
+  return tag === 'cloud' || tag.endsWith('-cloud')
+}
+
 export async function listOllamaModels(
   baseUrl?: string,
 ): Promise<OllamaModelDescriptor[]> {

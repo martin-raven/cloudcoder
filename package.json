@@ -1,10 +1,11 @@
 {
-  "name": "@gitlawb/openclaude",
+  "name": "cloudcoder",
   "version": "0.1.8",
-  "description": "Claude Code opened to any LLM — OpenAI, Gemini, DeepSeek, Ollama, and 200+ models",
+  "description": "Cloud Code — use Claude Code with any LLM: OpenAI, Gemini, DeepSeek, Ollama, and 200+ models",
   "type": "module",
   "bin": {
-    "openclaude": "./bin/openclaude"
+    "cloudcoder": "./bin/cloudcode",
+    "openclaude": "./bin/cloudcode"
   },
   "files": [
     "bin/",
@@ -143,6 +144,7 @@
     "url": "https://gitlawb.com/z6MkqDnb7Siv3Cwj7pGJq4T5EsUisECqR8KpnDLwcaZq5TPr/openclaude"
   },
   "keywords": [
+    "cloudcoder",
     "claude-code",
     "openai",
     "llm",

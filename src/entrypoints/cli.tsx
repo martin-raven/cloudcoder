@@ -80,7 +80,7 @@ async function main(): Promise<void> {
   if (args.length === 1 && (args[0] === '--version' || args[0] === '-v' || args[0] === '-V')) {
     // MACRO.VERSION is inlined at build time
     // biome-ignore lint/suspicious/noConsole:: intentional console output
-    console.log(`${MACRO.DISPLAY_VERSION ?? MACRO.VERSION} (Open Claude)`);
+    console.log(`${MACRO.DISPLAY_VERSION ?? MACRO.VERSION} (Cloud Coder)`);
     return;
   }
 
@@ -94,6 +94,23 @@ async function main(): Promise<void> {
       console.error(`Error: ${result.error}`);
       process.exit(1);
     }
+  }
+
+  // Default to Ollama when no provider env var is set.
+  // Explicit env vars and --provider flags above take precedence.
+  if (
+    !process.env.CLAUDE_CODE_USE_OPENAI &&
+    !process.env.CLAUDE_CODE_USE_GEMINI &&
+    !process.env.CLAUDE_CODE_USE_GITHUB &&
+    !process.env.CLAUDE_CODE_USE_BEDROCK &&
+    !process.env.CLAUDE_CODE_USE_VERTEX &&
+    !process.env.CLAUDE_CODE_USE_FOUNDRY &&
+    !process.env.ANTHROPIC_API_KEY
+  ) {
+    process.env.CLAUDE_CODE_USE_OPENAI = '1'
+    process.env.OPENAI_BASE_URL ??= 'http://localhost:11434/v1'
+    process.env.OPENAI_API_KEY ??= 'ollama'
+    process.env.OPENAI_MODEL ??= 'glm-5:cloud'
   }
 
   {

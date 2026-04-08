@@ -21,6 +21,8 @@ import { getDefaultMainLoopModelSetting, isOpus1mMergeEnabled, renderDefaultMode
 import { isModelAllowed } from '../../utils/model/modelAllowlist.js';
 import { validateModel } from '../../utils/model/validateModel.js';
 import { getAdditionalModelOptionsCacheScope } from '../../services/api/providerConfig.js';
+import { ensureOllamaModelPulled, isOllamaProvider } from '../../utils/model/ollamaModels.js';
+import { isCloudModel } from '../../utils/providerDiscovery.js';
 function ModelPickerWrapper(t0) {
   const $ = _c(17);
   const {
@@ -50,12 +52,25 @@ function ModelPickerWrapper(t0) {
   const handleCancel = t1;
   let t2;
   if ($[3] !== isFastMode || $[4] !== mainLoopModel || $[5] !== onDone || $[6] !== setAppState) {
-    t2 = function handleSelect(model, effort) {
+    t2 = async function handleSelect(model, effort) {
       logEvent("tengu_model_command_menu", {
         action: model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         from_model: mainLoopModel as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         to_model: model as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS
       });
+
+      // Auto-pull cloud models via Ollama when selected
+      if (model && isOllamaProvider() && isCloudModel(model)) {
+        const pulled = await ensureOllamaModelPulled(model, (msg) => {
+          // biome-ignore lint/suspicious/noConsole:: pull progress feedback
+          console.log(chalk.dim(`  ${msg}`))
+        })
+        if (!pulled) {
+          onDone(`Failed to pull ${chalk.bold(model)}. Run \`ollama signin\` if you haven't, then try again.`);
+          return;
+        }
+      }
+
       setAppState(prev => ({
         ...prev,
         mainLoopModel: model,
@@ -178,6 +193,20 @@ function SetModelAndClose({
       if (isKnownAlias(model)) {
         setModel(model);
         return;
+      }
+
+      // Auto-pull cloud models via Ollama when set inline
+      if (isOllamaProvider() && isCloudModel(model)) {
+        const pulled = await ensureOllamaModelPulled(model, (msg) => {
+          // biome-ignore lint/suspicious/noConsole:: pull progress feedback
+          console.log(chalk.dim(`  ${msg}`))
+        })
+        if (!pulled) {
+          onDone(`Failed to pull ${model}. Run \`ollama signin\` if you haven't, then try again.`, {
+            display: 'system'
+          });
+          return;
+        }
       }
 
       // Validate and set custom model

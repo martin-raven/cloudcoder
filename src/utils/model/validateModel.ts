@@ -11,6 +11,7 @@ import {
 } from '@anthropic-ai/sdk'
 import { getModelStrings } from './modelStrings.js'
 import { getCachedOllamaModelOptions, isOllamaProvider } from './ollamaModels.js'
+import { isCloudModel } from '../providerDiscovery.js'
 
 // Cache valid models to avoid repeated API calls
 const validModelCache = new Map<string, boolean>()
@@ -36,6 +37,13 @@ export async function validateModel(
     if (found) {
       validModelCache.set(normalizedModel, true)
       return { valid: true }
+    }
+    // Cloud model not found in the cached list — could be auth, typo, or cold cache
+    if (isCloudModel(normalizedModel)) {
+      return {
+        valid: false,
+        error: `Cloud model '${normalizedModel}' not found. If you haven't signed in, run \`ollama signin\`. Otherwise check the model name and ensure Ollama is running.`,
+      }
     }
     if (ollamaModels.length > 0) {
       const MAX_SHOWN = 5
