@@ -8,9 +8,9 @@ import { getAPIProvider } from '../utils/model/providers.js'
 import { getWorkload } from '../utils/workloadContext.js'
 
 const DEFAULT_PREFIX =
-  `You are Cloud Coder, an AI coding assistant built on top of OpenClaude.`
+  `You are Cloud Coder, an AI coding assistant built on top of Cloud Coder.`
 const AGENT_SDK_CLAUDE_CODE_PRESET_PREFIX =
-  `You are Cloud Coder, an AI coding assistant built on top of OpenClaude, running within the Claude Agent SDK.`
+  `You are Cloud Coder, an AI coding assistant built on top of Cloud Coder, running within the Claude Agent SDK.`
 const AGENT_SDK_PREFIX =
   `You are a Claude agent running in Cloud Coder, built on the Claude Agent SDK.`
 
