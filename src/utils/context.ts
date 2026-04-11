@@ -134,6 +134,8 @@ export function getSonnet1mExpTreatmentEnabled(model: string): boolean {
 /**
  * Calculate context window usage percentage from token usage data.
  * Returns used and remaining percentages, or null values if no usage data.
+ * Note: Returns null when usage has zero input tokens (e.g., Ollama Cloud providers
+ * that don't return meaningful usage data).
  */
 export function calculateContextPercentages(
   currentUsage: {
@@ -143,7 +145,7 @@ export function calculateContextPercentages(
   } | null,
   contextWindowSize: number,
 ): { used: number | null; remaining: number | null } {
-  if (!currentUsage) {
+  if (!currentUsage || currentUsage.input_tokens === 0) {
     return { used: null, remaining: null }
   }
 

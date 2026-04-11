@@ -303,6 +303,157 @@ export function getCompactPrompt(customInstructions?: string): string {
 }
 
 /**
+ * Prompt for compacting a single chunk in parallel compaction.
+ * Each chunk gets context-aware instructions based on its position.
+ */
+export function getChunkCompactPrompt(options: {
+  chunkIndex: number
+  totalChunks: number
+  customInstructions?: string
+}): string {
+  const isFirst = options.chunkIndex === 0
+  const isLast = options.chunkIndex === options.totalChunks - 1
+
+  let positionContext: string
+  if (isFirst) {
+    positionContext = `This is the FIRST chunk of the conversation. Establish the main context, user goals, and initial approach. Later chunks will build on this foundation.`
+  } else if (isLast) {
+    positionContext = `This is the FINAL chunk of the conversation. Emphasize what was accomplished, the final state, and any pending tasks.`
+  } else {
+    positionContext = `This is a MIDDLE chunk of the conversation. Focus on technical details, code changes, and problem-solving. Note how this connects to prior and subsequent work.`
+  }
+
+  let prompt = `${NO_TOOLS_PREAMBLE}
+
+You are summarizing one chunk of a larger conversation that has been split for efficient processing.
+
+${positionContext}
+
+${DETAILED_ANALYSIS_INSTRUCTION_BASE}
+
+Your summary should include:
+
+1. Key Requests and Intents: Capture the user's explicit requests from this chunk
+2. Technical Concepts: List important technical concepts, technologies, and frameworks discussed
+3. Files and Code Sections: Enumerate specific files and code sections examined, modified, or created. Include full code snippets where applicable.
+4. Errors and Fixes: List errors encountered and how they were fixed
+5. Problem Solving: Document problems solved and any ongoing troubleshooting
+6. ${isFirst ? 'Initial Context: Establish the foundation that later chunks will build on' : isLast ? 'Final State: Describe what was accomplished and what remains pending' : 'Continuity: How this chunk connects to prior and subsequent work'}
+
+${isFirst ? `
+IMPORTANT: This chunk sets the foundation. Include:
+- The user's original problem or goal
+- Initial approach and decisions made
+- Key files and their purpose
+` : ''}
+
+${isLast ? `
+IMPORTANT: This chunk concludes the conversation. Include:
+- Final outcomes and accomplishments
+- Any unresolved issues or pending tasks
+- The state of the codebase at the end
+` : ''}
+
+Here's an example of how your output should be structured:
+
+<example>
+<analysis>
+[Your thought process for this chunk]
+</analysis>
+
+<summary>
+1. Key Requests and Intents:
+   [Description]
+
+2. Technical Concepts:
+   - [Concept 1]
+   - [Concept 2]
+
+3. Files and Code Sections:
+   - [File Name]
+      - [Summary and code snippet]
+
+4. Errors and Fixes:
+   - [Error and fix]
+
+5. Problem Solving:
+   [Description]
+
+6. ${isFirst ? 'Initial Context' : isLast ? 'Final State' : 'Continuity'}:
+   [Description]
+</summary>
+</example>
+
+Please provide your summary following this structure.`
+
+  if (options.customInstructions && options.customInstructions.trim() !== '') {
+    prompt += `\n\nAdditional Instructions:\n${options.customInstructions}`
+  }
+
+  prompt += NO_TOOLS_TRAILER
+
+  return prompt
+}
+
+/**
+ * Prompt for merging summaries from multiple chunks.
+ */
+export function getMergeSummariesPrompt(
+  chunkResults: Array<{ chunkIndex: number; summary: string; tokens: number }>,
+  customInstructions?: string,
+): string {
+  const sorted = chunkResults.sort((a, b) => a.chunkIndex - b.chunkIndex)
+  const totalChunks = sorted.length
+
+  const chunkSummaries = sorted
+    .map(
+      (r, i) => `
+## Chunk ${i + 1} of ${totalChunks}
+${r.summary}
+`,
+    )
+    .join('\n---\n')
+
+  let prompt = `${NO_TOOLS_PREAMBLE}
+
+You are merging summaries from ${totalChunks} chunks of a conversation into a single coherent summary.
+
+Each chunk was summarized independently. Your task is to combine them into one unified summary that:
+1. Removes redundancy between chunks
+2. Preserves all important technical details
+3. Maintains chronological flow
+4. Includes complete code snippets for all file changes
+5. Lists all errors and how they were fixed
+6. Captures the user's requests and how they were addressed
+
+Here are the chunk summaries to merge:
+
+${chunkSummaries}
+
+Create a single unified summary following the standard compact format with these sections:
+
+1. Primary Request and Intent
+2. Key Technical Concepts
+3. Files and Code Sections (include full code snippets)
+4. Errors and Fixes
+5. Problem Solving
+6. All User Messages (non-tool)
+7. Pending Tasks
+8. Current Work
+9. Optional Next Step
+
+Your merged summary should be comprehensive yet concise. When chunks overlap, consolidate rather than duplicate.`
+
+  if (customInstructions && customInstructions.trim() !== '') {
+    prompt += `\n\nAdditional Instructions:\n${customInstructions}`
+  }
+
+  prompt += NO_TOOLS_TRAILER
+
+  return prompt
+}
+
+/**
  * Formats the compact summary by stripping the <analysis> drafting scratchpad
  * and replacing <summary> XML tags with readable section headers.
  * @param summary The raw summary string potentially containing <analysis> and <summary> XML tags

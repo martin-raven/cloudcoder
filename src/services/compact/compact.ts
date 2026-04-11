@@ -117,6 +117,7 @@ import {
   getCompactUserSummaryMessage,
   getPartialCompactPrompt,
 } from './prompt.js'
+import { isOllamaCloudProvider, shouldUseParallelCompact } from '../../utils/ollamaCloud.js'
 
 export const POST_COMPACT_MAX_FILES_TO_RESTORE = 5
 export const POST_COMPACT_TOKEN_BUDGET = 50_000
@@ -398,6 +399,19 @@ export async function compactConversation(
     }
 
     const preCompactTokenCount = tokenCountWithEstimation(messages)
+    const model = context.options.mainLoopModel
+
+    // Route to parallel compaction for Ollama Cloud models when beneficial
+    if (isOllamaCloudProvider(model) && await shouldUseParallelCompact(model, preCompactTokenCount)) {
+      const { parallelCompactConversation: parallelCompact } = await import('./parallelCompact.js')
+      return parallelCompact(
+        messages,
+        context,
+        cacheSafeParams,
+        isAutoCompact,
+        customInstructions,
+      )
+    }
 
     const appState = context.getAppState()
 

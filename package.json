@@ -1,6 +1,6 @@
 {
   "name": "cloudcoder",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Cloud Code — use Claude Code with any LLM: OpenAI, Gemini, DeepSeek, Ollama, and 200+ models",
   "type": "module",
   "bin": {

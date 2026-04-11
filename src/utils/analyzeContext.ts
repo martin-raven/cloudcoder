@@ -1162,9 +1162,11 @@ export async function analyzeContextUsage(
   // This uses the same source of truth as the status line for consistency
   const apiUsage = getCurrentUsage(originalMessages ?? messages)
 
-  // When API usage is available, use it for total to match status line calculation
+  // When API usage is available and meaningful, use it for total to match status line
   // Status line uses: input_tokens + cache_creation_input_tokens + cache_read_input_tokens
-  const totalFromAPI = apiUsage
+  // Note: Some providers (e.g., Ollama Cloud) return usage objects with zero values.
+  // Fall back to estimation when API usage is unavailable or has zero input tokens.
+  const totalFromAPI = apiUsage && apiUsage.input_tokens > 0
     ? apiUsage.input_tokens +
       apiUsage.cache_creation_input_tokens +
       apiUsage.cache_read_input_tokens
