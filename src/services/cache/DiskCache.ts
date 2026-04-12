@@ -1,9 +1,9 @@
 /**
  * SQLite-based disk cache for persistent caching.
- * Uses bun:sqlite for optimal performance.
+ * Uses bun:sqlite when available, falls back to better-sqlite3 for Node.
  */
 
-import { Database } from 'bun:sqlite';
+import { createDatabase, type SqliteDatabase } from '../../utils/sqliteAdapter.js';
 import type { Service, HealthStatus } from '../../types/core.js';
 
 interface DiskCacheOptions {
@@ -12,7 +12,7 @@ interface DiskCacheOptions {
 }
 
 export class DiskCache implements Service {
-  private db: Database | null = null;
+  private db: SqliteDatabase | null = null;
   private readonly dbPath: string;
   private readonly ttlMs: number;
   private initialized = false;
@@ -25,7 +25,7 @@ export class DiskCache implements Service {
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    this.db = new Database(this.dbPath);
+    this.db = createDatabase(this.dbPath);
 
     // Create cache table
     this.db.exec(`
