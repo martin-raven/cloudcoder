@@ -1,0 +1,6 @@
+[package]
+name = "cloudcoder-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
