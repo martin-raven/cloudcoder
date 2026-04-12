@@ -42,20 +42,33 @@ function buildStatusLineCommandInput(permissionMode: PermissionMode, exceeds200k
     exceeds200kTokens
   });
   const outputStyleName = settings?.outputStyle || DEFAULT_OUTPUT_STYLE_NAME;
-  const apiUsage = getCurrentUsage(messages);
   const contextWindowSize = getContextWindowForModel(runtimeModel, getSdkBetas());
 
-  // For providers that don't return usage data (e.g., Ollama Cloud), fall back to estimation
+  // Always use estimation for context calculation - this is more reliable than API usage
+  // which may be missing, zero, or stale depending on provider and timing
+  const estimatedInputTokens = tokenCountWithEstimation(messages);
+  const apiUsage = getCurrentUsage(messages);
+
+  // Use API usage only if it's meaningful (has actual input tokens)
+  // Otherwise fall back to estimation - this handles Ollama Cloud and race conditions
   const currentUsage = apiUsage && apiUsage.input_tokens > 0
     ? apiUsage
     : {
-        input_tokens: tokenCountWithEstimation(messages),
+        input_tokens: estimatedInputTokens,
         output_tokens: 0,
         cache_creation_input_tokens: 0,
         cache_read_input_tokens: 0,
       };
 
-  const contextPercentages = calculateContextPercentages(currentUsage, contextWindowSize);
+  let contextPercentages = calculateContextPercentages(currentUsage, contextWindowSize);
+
+  // Fallback: if percentages are null (e.g., no messages yet), calculate from estimation
+  if (contextPercentages.used === null || contextPercentages.remaining === null) {
+    contextPercentages = {
+      used: Math.min(100, Math.round((estimatedInputTokens / contextWindowSize) * 100)),
+      remaining: Math.max(0, 100 - Math.round((estimatedInputTokens / contextWindowSize) * 100)),
+    };
+  }
   const sessionId = getSessionId();
   const sessionName = getCurrentSessionTitle(sessionId);
   const rawUtil = getRawUtilization();
