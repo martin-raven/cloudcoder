@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Coder - Architecture Improvements & Recommendations</title>
+    <style>
+        :root {
+            --primary: #0ea5e9;
+            --primary-dark: #0284c7;
+            --secondary: #7c3aed;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #0f172a;
+            --bg-card: #1e293b;
+            --bg-hover: #334155;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        h2 { font-size: 1.8rem; margin: 30px 0 15px; color: var(--primary); border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+        h3 { font-size: 1.3rem; margin: 20px 0 10px; color: var(--secondary); }
+        .subtitle { color: var(--text-muted); margin-bottom: 30px; }
+        .nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: var(--bg-card);
+            border-radius: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .nav a {
+            color: var(--text);
+            text-decoration: none;
+            padding: 8px 16px;
+            background: var(--bg-hover);
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .nav a:hover { background: var(--primary); }
+        .card {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 1px solid var(--border);
+        }
+        .card:hover { border-color: var(--primary); }
+        .priority-high { border-left: 4px solid var(--danger); }
+        .priority-medium { border-left: 4px solid var(--warning); }
+        .priority-low { border-left: 4px solid var(--success); }
+        .priority-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .priority-high .priority-badge { background: var(--danger); }
+        .priority-medium .priority-badge { background: var(--warning); color: var(--bg); }
+        .priority-low .priority-badge { background: var(--success); }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        .recommendation-box {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-hover));
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            transition: transform 0.2s;
+        }
+        .recommendation-box:hover { transform: translateY(-3px); border-color: var(--primary); }
+        .recommendation-box h4 { color: var(--primary); margin-bottom: 10px; }
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .pros, .cons {
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .pros { background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); }
+        .cons { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); }
+        .pros h5 { color: var(--success); margin-bottom: 8px; }
+        .cons h5 { color: var(--danger); margin-bottom: 8px; }
+        .pros ul, .cons ul { margin-left: 15px; font-size: 0.9rem; }
+        .pros li { color: var(--success); }
+        .cons li { color: var(--text-muted); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        th { background: var(--bg-hover); color: var(--primary); }
+        tr:hover { background: var(--bg-hover); }
+        code {
+            background: var(--bg);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            color: var(--primary);
+        }
+        pre {
+            background: var(--bg);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        pre code { background: none; padding: 0; }
+        .warning { background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--warning); padding: 15px; margin: 15px 0; }
+        .info { background: rgba(14, 165, 233, 0.1); border-left: 4px solid var(--primary); padding: 15px; margin: 15px 0; }
+        .comparison-table {
+            margin: 20px 0;
+        }
+        .comparison-table th { background: var(--primary-dark); }
+        .migration-path {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .migration-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin: 15px 0;
+            padding: 15px;
+            background: var(--bg-hover);
+            border-radius: 8px;
+        }
+        .step-number {
+            background: var(--primary);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .toc {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .toc ul { margin-left: 20px; }
+        .toc li { margin: 8px 0; }
+        .toc a { color: var(--text-muted); text-decoration: none; }
+        .toc a:hover { color: var(--primary); }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        .stat-value { font-size: 2rem; color: var(--primary); font-weight: 700; }
+        .stat-label { color: var(--text-muted); margin-top: 5px; }
+        details {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        details[open] { border-color: var(--primary); }
+        summary {
+            padding: 15px 20px;
+            cursor: pointer;
+            background: var(--bg-hover);
+            font-weight: 600;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        summary::after { content: '+'; font-size: 1.5rem; }
+        details[open] summary::after { content: '-'; }
+        .details-content { padding: 20px; border-top: 1px solid var(--border); }
+        .roadmap {
+            position: relative;
+            padding: 20px 0;
+        }
+        .roadmap::before {
+            content: '';
+            position: absolute;
+            left: 30px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--border);
+        }
+        .roadmap-item {
+            position: relative;
+            padding-left: 70px;
+            margin: 20px 0;
+        }
+        .roadmap-item::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 5px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 4px solid var(--bg);
+        }
+        .roadmap-item.phase-1::before { background: var(--danger); }
+        .roadmap-item.phase-2::before { background: var(--warning); }
+        .roadmap-item.phase-3::before { background: var(--success); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Architecture Improvements & Recommendations</h1>
+        <p class="subtitle">Based on comprehensive analysis of Cloud Coder v0.1.10</p>
+
+        <div class="nav">
+            <a href="#executive">Executive Summary</a>
+            <a href="#language">Language Choice</a>
+            <a href="#architecture">Architecture Changes</a>
+            <a href="#services">New Services</a>
+            <a href="#tools">New Tools</a>
+            <a href="#performance">Performance</a>
+            <a href="#security">Security</a>
+            <a href="#roadmap">Roadmap</a>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">15</div>
+                <div class="stat-label">Major Recommendations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">5</div>
+                <div class="stat-label">Language Options</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">8</div>
+                <div class="stat-label">New Services Proposed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">12</div>
+                <div class="stat-label">New Tools Proposed</div>
+            </div>
+        </div>
+
+        <section id="executive">
+            <h2>Executive Summary</h2>
+
+            <div class="card priority-high">
+                <span class="priority-badge">High Priority</span>
+                <h3 style="margin-top: 10px;">Key Findings</h3>
+                <ul>
+                    <li><strong>Circular Dependencies:</strong> Multiple import cycles detected in permissions, tools, and state modules</li>
+                    <li><strong>Feature Flag Complexity:</strong> 20+ feature flags create build complexity and testing overhead</li>
+                    <li><strong>Monolithic Build:</strong> Single bundled binary limits modularity and increases startup time</li>
+                    <li><strong>React in CLI:</strong> React Compiler in terminal UI adds unnecessary complexity</li>
+                    <li><strong>Telemetry Disabled:</strong> No-telemetry plugin suggests privacy concerns that could be addressed with transparent telemetry</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Current Architecture Strengths</h3>
+                <ul>
+                    <li><strong>Multi-provider Support:</strong> Excellent abstraction for 10+ LLM providers</li>
+                    <li><strong>MCP Integration:</strong> Strong Model Context Protocol implementation</li>
+                    <li><strong>Tool System:</strong> Well-designed tool interface with permission checking</li>
+                    <li><strong>Bridge Architecture:</strong> Robust remote session management</li>
+                    <li><strong>State Management:</strong> Clean Zustand-style store pattern</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="language">
+            <h2>Recommended Language Choice</h2>
+
+            <div class="card">
+                <h3>Comparison Matrix</h3>
+                <table class="comparison-table">
+                    <tr>
+                        <th>Language</th>
+                        <th>Startup Time</th>
+                        <th>Memory Usage</th>
+                        <th>Dev Speed</th>
+                        <th>Type Safety</th>
+                        <th>Ecosystem</th>
+                        <th>Overall</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Rust</strong></td>
+                        <td>Excellent</td>
+                        <td>Excellent</td>
+                        <td>Moderate</td>
+                        <td>Excellent</td>
+                        <td>Good</td>
+                        <td><strong>9/10</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Go</strong></td>
+                        <td>Excellent</td>
+                        <td>Good</td>
+                        <td>Excellent</td>
+                        <td>Good</td>
+                        <td>Excellent</td>
+                        <td><strong>8.5/10</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>TypeScript (current)</strong></td>
+                        <td>Moderate</td>
+                        <td>Moderate</td>
+                        <td>Excellent</td>
+                        <td>Good</td>
+                        <td>Excellent</td>
+                        <td><strong>7/10</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Zig</strong></td>
+                        <td>Excellent</td>
+                        <td>Excellent</td>
+                        <td>Moderate</td>
+                        <td>Moderate</td>
+                        <td>Emerging</td>
+                        <td><strong>6.5/10</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Python</strong></td>
+                        <td>Poor</td>
+                        <td>Poor</td>
+                        <td>Excellent</td>
+                        <td>Poor</td>
+                        <td>Excellent</td>
+                        <td><strong>5/10</strong></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="card priority-high">
+                <span class="priority-badge">Recommendation</span>
+                <h3 style="margin-top: 10px;">Primary Recommendation: Rust</h3>
+                <p>For a CLI tool that needs fast startup, low memory usage, and high reliability, Rust is the optimal choice.</p>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h5>Pros</h5>
+                        <ul>
+                            <li>Sub-100ms startup time</li>
+                            <li>Minimal memory footprint (&lt;50MB)</li>
+                            <li>Zero-cost abstractions</li>
+                            <li>Compile-time memory safety</li>
+                            <li>Excellent async runtime (tokio)</li>
+                            <li>Strong FFI for existing C libraries</li>
+                            <li>Single binary deployment</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>Cons</h5>
+                        <ul>
+                            <li>Steeper learning curve</li>
+                            <li>Longer compile times</li>
+                            <li>Smaller LLM SDK ecosystem</li>
+                            <li>More verbose than TypeScript</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="migration-path">
+                    <h4>Migration Strategy</h4>
+                    <div class="migration-step">
+                        <div class="step-number">1</div>
+                        <div>
+                            <strong>Rewrite core infrastructure first</strong>
+                            <p>Start with file operations, shell execution, and permission system in Rust</p>
+                        </div>
+                    </div>
+                    <div class="migration-step">
+                        <div class="step-number">2</div>
+                        <div>
+                            <strong>Keep TypeScript for UI layer</strong>
+                            <p>Use Ink/React for terminal UI, communicate via IPC or FFI</p>
+                        </div>
+                    </div>
+                    <div class="migration-step">
+                        <div class="step-number">3</div>
+                        <div>
+                            <strong>Gradual tool migration</strong>
+                            <p>Migrate tools one at a time, starting with BashTool and FileReadTool</p>
+                        </div>
+                    </div>
+                    <div class="migration-step">
+                        <div class="step-number">4</div>
+                        <div>
+                            <strong>Provider layer last</strong>
+                            <p>Keep provider SDKs in TypeScript initially, wrap with Rust FFI</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card priority-medium">
+                <span class="priority-badge">Alternative</span>
+                <h3 style="margin-top: 10px;">Secondary Recommendation: Go</h3>
+                <p>If Rust's learning curve is prohibitive, Go offers excellent performance with easier adoption.</p>
+
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h5>Pros</h5>
+                        <ul>
+                            <li>Fast compilation</li>
+                            <li>Simple concurrency model</li>
+                            <li>Excellent standard library</li>
+                            <li>Easy hiring/training</li>
+                            <li>Good LLM SDK support emerging</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>Cons</h5>
+                        <ul>
+                            <li>Higher memory than Rust</li>
+                            <li>Garbage collection pauses</li>
+                            <li>Less type safety</li>
+                            <li>Error handling verbosity</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="architecture">
+            <h2>Architecture Improvements</h2>
+
+            <div class="grid">
+                <div class="recommendation-box priority-high">
+                    <span class="priority-badge">High Priority</span>
+                    <h4>1. Eliminate Circular Dependencies</h4>
+                    <p>Current codebase has circular imports between permissions, tools, and state modules.</p>
+                    <h5>Solution:</h5>
+                    <ul>
+                        <li>Create shared types package (src/types/core.ts)</li>
+                        <li>Use dependency injection pattern</li>
+                        <li>Implement event bus for cross-module communication</li>
+                    </ul>
+                    <pre><code>// Before: Circular import
+// permissions.ts -> tools.ts -> permissions.ts
+
+// After: Event-based decoupling
+class EventBus {
+  emit(event: ToolEvent): void
+  subscribe(handler: EventHandler): Subscription
+}</code></pre>
+                </div>
+
+                <div class="recommendation-box priority-high">
+                    <span class="priority-badge">High Priority</span>
+                    <h4>2. Modular Build System</h4>
+                    <p>Single bundled binary causes slow startup and limits code-splitting.</p>
+                    <h5>Solution:</h5>
+                    <ul>
+                        <li>Split into core + plugins architecture</li>
+                        <li>Lazy-load tools on first use</li>
+                        <li>Use dynamic imports for commands</li>
+                        <li>Implement plugin SDK for third-party extensions</li>
+                    </ul>
+                    <p><strong>Expected Impact:</strong> 40-60% faster startup</p>
+                </div>
+
+                <div class="recommendation-box priority-medium">
+                    <span class="priority-badge">Medium Priority</span>
+                    <h4>3. Replace React Compiler with Pure Ink</h4>
+                    <p>React Compiler adds complexity without benefit for terminal UI.</p>
+                    <h5>Solution:</h5>
+                    <ul>
+                        <li>Remove react-compiler-runtime dependency</li>
+                        <li>Use pure Ink components</li>
+                        <li>Implement manual memoization where needed</li>
+                    </ul>
+                    <p><strong>Expected Impact:</strong> 30% smaller bundle, simpler build</p>
+                </div>
+
+                <div class="recommendation-box priority-medium">
+                    <span class="priority-badge">Medium Priority</span>
+                    <h4>4. Implement Proper Plugin System</h4>
+                    <p>Current plugin loading is ad-hoc with filesystem polling.</p>
+                    <h5>Solution:</h5>
+                    <ul>
+                        <li>Define plugin manifest schema</li>
+                        <li>Implement plugin sandboxing</li>
+                        <li>Add plugin marketplace infrastructure</li>
+                        <li>Version compatibility checking</li>
+                    </ul>
+                </div>
+
+                <div class="recommendation-box priority-low">
+                    <span class="priority-badge">Low Priority</span>
+                    <h4>5. Centralized Error Handling</h4>
+                    <p>Error handling is scattered across modules with inconsistent patterns.</p>
+                    <h5>Solution:</h5>
+                    <ul>
+                        <li>Create error hierarchy (CloudCoderError base class)</li>
+                        <li>Implement error boundaries for UI</li>
+                        <li>Add structured error logging</li>
+                        <li>Error recovery strategies</li>
+                    </ul>
+                </div>
+
+                <div class="recommendation-box priority-low">
+                    <span class="priority-badge">Low Priority</span>
+                    <h4>6. Configuration Schema Validation</h4>
+                    <p>Settings validation is manual and error-prone.</p>
+                    <h5>Solution:</h5>
+                    <ul>
+                        <li>Use Zod for all configuration schemas</li>
+                        <li>Runtime validation on load</li>
+                        <li>Migration helpers for schema changes</li>
+                        <li>Default value inheritance</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="services">
+            <h2>Proposed New Services</h2>
+
+            <div class="card">
+                <h3>Service Architecture</h3>
+                <p>Each service should follow this pattern:</p>
+                <pre><code>interface Service {
+  name: string
+  initialize(): Promise&lt;void&gt;
+  dispose(): Promise&lt;void&gt;
+  healthCheck(): Promise&lt;HealthStatus&gt;
+}
+
+// Service registration
+services.register('cache', new CacheService())
+services.register('telemetry', new TelemetryService())</code></pre>
+            </div>
+
+            <div class="grid">
+                <div class="recommendation-box">
+                    <h4>1. Caching Service</h4>
+                    <p>Multi-tier caching for API responses, file reads, and tool results.</p>
+                    <ul>
+                        <li><strong>Memory Cache:</strong> LRU cache for hot data</li>
+                        <li><strong>Disk Cache:</strong> SQLite for persistent cache</li>
+                        <li><strong>API Cache:</strong> Response caching with TTL</li>
+                        <li><strong>Invalidation:</strong> File watcher-based invalidation</li>
+                    </ul>
+                    <p><strong>Location:</strong> src/services/cache/</p>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>2. Telemetry Service (Opt-in)</h4>
+                    <p>Transparent, privacy-respecting usage analytics.</p>
+                    <ul>
+                        <li><strong>Opt-in Only:</strong> Explicit user consent</li>
+                        <li><strong>Local Dashboard:</strong> /stats command shows local metrics</li>
+                        <li><strong>Export Options:</strong> JSON, CSV export</li>
+                        <li><strong>Privacy:</strong> No code/file content sent</li>
+                    </ul>
+                    <p><strong>Location:</strong> src/services/telemetry/</p>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>3. Rate Limiting Service</h4>
+                    <p>Centralized rate limiting across all providers.</p>
+                    <ul>
+                        <li><strong>Token Bucket:</strong> Configurable per provider</li>
+                        <li><strong>Queue Management:</strong> Request queuing when limited</li>
+                        <li><strong>Backoff Strategies:</strong> Exponential backoff</li>
+                        <li><strong>Priority Queue:</strong> Critical requests bypass</li>
+                    </ul>
+                    <p><strong>Location:</strong> src/services/rate-limiter/</p>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>4. Secret Management Service</h4>
+                    <p>Secure credential storage and rotation.</p>
+                    <ul>
+                        <li><strong>Keychain Integration:</strong> macOS Keychain, Windows Credential Manager</li>
+                        <li><strong>Encryption:</strong> AES-256 for file-based secrets</li>
+                        <li><strong>Rotation:</strong> Automatic token refresh</li>
+                        <li><strong>Audit Log:</strong> Secret access logging</li>
+                    </ul>
+                    <p><strong>Location:</strong> src/services/secrets/</p>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>5. Health Monitoring Service</h4>
+                    <p>System health monitoring and diagnostics.</p>
+                    <ul>
+                        <li><strong>Resource Monitoring:</strong> CPU, memory, disk usage</li>
+                        <li><strong>API Health:</strong> Provider endpoint checks</li>
+                        <li><strong>Performance Metrics:</strong> Latency tracking</li>
+                        <li><strong>Alerting:</strong> Configurable thresholds</li>
+                    </ul>
+                    <p><strong>Location:</strong> src/services/health/</p>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>6. Update Service</h4>
+                    <p>Automatic update management with rollback.</p>
+                    <ul>
+                        <li><strong>Version Check:</strong> GitHub releases polling</li>
+                        <li><strong>Delta Updates:</strong> Binary diff for smaller downloads</li>
+                        <li><strong>Rollback:</strong> Automatic rollback on failure</li>
+                        <li><strong>Changelog:</strong> Release notes display</li>
+                    </ul>
+                    <p><strong>Location:</strong> src/services/updater/</p>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>7. Extension Host Service</h4>
+                    <p>VS Code-like extension hosting for plugins.</p>
+                    <ul>
+                        <li><strong>Extension API:</strong> Well-defined plugin interface</li>
+                        <li><strong>Sandboxing:</strong> Isolated plugin execution</li>
+                        <li><strong>IPC:</strong> Message-based communication</li>
+                        <li><strong>Marketplace:</strong> Plugin discovery/install</li>
+                    </ul>
+                    <p><strong>Location:</strong> src/services/extension-host/</p>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>8. Vector Store Service</h4>
+                    <p>Local vector embeddings for semantic search.</p>
+                    <ul>
+                        <li><strong>Embeddings:</strong> Local model (all-MiniLM)</li>
+                        <li><strong>Index:</strong> HNSW for fast similarity search</li>
+                        <li><strong>Code Search:</strong> Semantic code search</li>
+                        <li><strong>Memory:</strong> Long-term context memory</li>
+                    </ul>
+                    <p><strong>Location:</strong> src/services/vector-store/</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="tools">
+            <h2>Proposed New Tools</h2>
+
+            <div class="card">
+                <h3>Tool Development Guidelines</h3>
+                <p>New tools should follow the established pattern in <code>src/Tool.ts</code>:</p>
+                <ul>
+                    <li>Implement full Tool interface</li>
+                    <li>Provide input validation</li>
+                    <li>Define permission requirements</li>
+                    <li>Support progress reporting</li>
+                    <li>Include UI rendering</li>
+                </ul>
+            </div>
+
+            <div class="grid">
+                <div class="recommendation-box">
+                    <h4>1. DatabaseTool</h4>
+                    <p>Database operations with multiple backend support.</p>
+                    <pre><code>DatabaseTool {
+  query: string
+  database: 'sqlite' | 'postgres' | 'mysql'
+  connection?: string
+}</code></pre>
+                    <ul>
+                        <li>SQL query execution</li>
+                        <li>Schema inspection</li>
+                        <li>Migration management</li>
+                        <li>Result pagination</li>
+                    </ul>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>2. GitTool (Enhanced)</h4>
+                    <p>Advanced Git operations beyond basic bash.</p>
+                    <ul>
+                        <li>Interactive rebase</li>
+                        <li>Bisect automation</li>
+                        <li>Stash management</li>
+                        <li>Conflict resolution helper</li>
+                        <li>PR creation workflow</li>
+                    </ul>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>3. DockerTool</h4>
+                    <p>Container management operations.</p>
+                    <ul>
+                        <li>Container lifecycle</li>
+                        <li>Image building</li>
+                        <li>Compose management</li>
+                        <li>Log streaming</li>
+                        <li>Resource monitoring</li>
+                    </ul>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>4. HttpTool</h4>
+                    <p>API testing and HTTP operations.</p>
+                    <ul>
+                        <li>REST API calls</li>
+                        <li>GraphQL queries</li>
+                        <li>Authentication helpers</li>
+                        <li>Response validation</li>
+                        <li>Request chaining</li>
+                    </ul>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>5. DiffTool</h4>
+                    <p>Advanced diff and patch operations.</p>
+                    <ul>
+                        <li>Side-by-side diff view</li>
+                        <li>Patch creation/apply</li>
+                        <li>Three-way merge</li>
+                        <li>Conflict marker editing</li>
+                    </ul>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>6. ProcessTool</h4>
+                    <p>System process management.</p>
+                    <ul>
+                        <li>Process listing</li>
+                        <li>Signal sending</li>
+                        <li>Resource monitoring</li>
+                        <li>Process tree visualization</li>
+                    </ul>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>7. NetworkTool</h4>
+                    <p>Network diagnostics and operations.</p>
+                    <ul>
+                        <li>Port scanning</li>
+                        <li>DNS lookup</li>
+                        <li>HTTP server (temporary)</li>
+                        <li>Network interface info</li>
+                    </ul>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>8. CryptoTool</h4>
+                    <p>Cryptographic operations.</p>
+                    <ul>
+                        <li>Hash generation</li>
+                        <li>Key generation</li>
+                        <li>Encryption/decryption</li>
+                        <li>Certificate inspection</li>
+                    </ul>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>9. ArchiveTool</h4>
+                    <p>Archive creation and extraction.</p>
+                    <ul>
+                        <li>ZIP/TAR/GZ support</li>
+                        <li>Compression options</li>
+                        <li>Streaming extraction</li>
+                        <li>Archive inspection</li>
+                    </ul>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>10. ConfigTool (Enhanced)</h4>
+                    <p>Configuration file management.</p>
+                    <ul>
+                        <li>JSON/YAML/TOML editing</li>
+                        <li>Schema validation</li>
+                        <li>Migration helpers</li>
+                        <li>Default value injection</li>
+                    </ul>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>11. LogTool</h4>
+                    <p>Log file analysis and streaming.</p>
+                    <ul>
+                        <li>Log tailing</li>
+                        <li>Pattern filtering</li>
+                        <li>Level aggregation</li>
+                        <li>Time-based queries</li>
+                    </ul>
+                </div>
+
+                <div class="recommendation-box">
+                    <h4>12. CloudTool</h4>
+                    <p>Cloud provider operations.</p>
+                    <ul>
+                        <li>AWS/GCP/Azure support</li>
+                        <li>Resource listing</li>
+                        <li>Cost estimation</li>
+                        <li>Deployment helpers</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="performance">
+            <h2>Performance Improvements</h2>
+
+            <div class="card">
+                <h3>Current Performance Issues</h3>
+                <table>
+                    <tr><th>Metric</th><th>Current</th><th>Target</th></tr>
+                    <tr><td>Cold Start</td><td>~500ms</td><td>&lt;100ms</td></tr>
+                    <tr><td>Memory Usage</td><td>~200MB</td><td>&lt;100MB</td></tr>
+                    <tr><td>First Token</td><td>~800ms</td><td>&lt;300ms</td></tr>
+                    <tr><td>Tool Execution</td><td>~50ms overhead</td><td>&lt;10ms</td></tr>
+                </table>
+            </div>
+
+            <div class="grid">
+                <div class="recommendation-box priority-high">
+                    <span class="priority-badge">High Impact</span>
+                    <h4>1. Lazy Loading</h4>
+                    <p>Defer loading of tools, commands, and services until needed.</p>
+                    <pre><code>// Current: Eager load all tools
+const tools = getAllBaseTools()
+
+// Improved: Lazy load on demand
+const tools = new LazyToolRegistry()
+tools.get('Bash') // Loads BashTool on first access</code></pre>
+                    <p><strong>Expected Impact:</strong> 40% faster startup</p>
+                </div>
+
+                <div class="recommendation-box priority-high">
+                    <span class="priority-badge">High Impact</span>
+                    <h4>2. Prompt Caching</h4>
+                    <p>Implement Anthropic prompt caching more aggressively.</p>
+                    <ul>
+                        <li>Cache system prompts across sessions</li>
+                        <li>Cache tool definitions</li>
+                        <li>Cache conversation prefixes</li>
+                        <li>Implement cache-aware message ordering</li>
+                    </ul>
+                    <p><strong>Expected Impact:</strong> 60% cost reduction, 30% latency reduction</p>
+                </div>
+
+                <div class="recommendation-box priority-medium">
+                    <span class="priority-badge">Medium Impact</span>
+                    <h4>3. Parallel Tool Execution</h4>
+                    <p>Execute independent tools in parallel.</p>
+                    <ul>
+                        <li>Dependency graph analysis</li>
+                        <li>Parallel execution engine</li>
+                        <li>Result aggregation</li>
+                        <li>Error isolation</li>
+                    </ul>
+                    <p><strong>Expected Impact:</strong> 50% faster multi-tool operations</p>
+                </div>
+
+                <div class="recommendation-box priority-medium">
+                    <span class="priority-badge">Medium Impact</span>
+                    <h4>4. Streaming Optimizations</h4>
+                    <p>Reduce streaming overhead.</p>
+                    <ul>
+                        <li>Batch token processing</li>
+                        <li>Reduce React re-renders</li>
+                        <li>Optimize terminal updates</li>
+                        <li>Backpressure handling</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="security">
+            <h2>Security Improvements</h2>
+
+            <div class="card priority-high">
+                <span class="priority-badge">Critical</span>
+                <h3 style="margin-top: 10px;">Security Recommendations</h3>
+
+                <div class="grid">
+                    <div>
+                        <h4>1. Sandboxing Enhancement</h4>
+                        <ul>
+                            <li>Implement proper syscall filtering (seccomp)</li>
+                            <li>Network namespace isolation</li>
+                            <li>Filesystem restrictions</li>
+                            <li>Resource limits (cgroups)</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4>2. Supply Chain Security</h4>
+                        <ul>
+                            <li>Dependency lockfile verification</li>
+                            <li>Binary signing verification</li>
+                            <li>SLSA provenance</li>
+                            <li>Vulnerability scanning</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4>3. Secret Detection</h4>
+                        <ul>
+                            <li>Pre-commit secret scanning</li>
+                            <li>Runtime secret detection</li>
+                            <li>Automatic secret rotation</li>
+                            <li>Audit logging</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4>4. Permission Hardening</h4>
+                        <ul>
+                            <li>Default-deny permissions</li>
+                            <li>Time-limited grants</li>
+                            <li>Scope-limited grants</li>
+                            <li>Permission auditing</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="roadmap">
+            <h2>Implementation Roadmap</h2>
+
+            <div class="roadmap">
+                <div class="roadmap-item phase-1">
+                    <h4>Phase 1: Foundation (Months 1-3)</h4>
+                    <ul>
+                        <li>Eliminate circular dependencies</li>
+                        <li>Implement caching service</li>
+                        <li>Add lazy loading infrastructure</li>
+                        <li>Enhanced prompt caching</li>
+                        <li>Security hardening (sandboxing)</li>
+                    </ul>
+                </div>
+
+                <div class="roadmap-item phase-2">
+                    <h4>Phase 2: Performance (Months 4-6)</h4>
+                    <ul>
+                        <li>Rust rewrite of core components</li>
+                        <li>Parallel tool execution</li>
+                        <li>Rate limiting service</li>
+                        <li>Health monitoring</li>
+                        <li>Update service</li>
+                    </ul>
+                </div>
+
+                <div class="roadmap-item phase-3">
+                    <h4>Phase 3: Features (Months 7-9)</h4>
+                    <ul>
+                        <li>Plugin system implementation</li>
+                        <li>Vector store service</li>
+                        <li>New tools (Database, Docker, HTTP)</li>
+                        <li>Extension host</li>
+                        <li>Telemetry (opt-in)</li>
+                    </ul>
+                </div>
+
+                <div class="roadmap-item phase-4">
+                    <h4>Phase 4: Polish (Months 10-12)</h4>
+                    <ul>
+                        <li>Full Rust migration (optional)</li>
+                        <li>Plugin marketplace</li>
+                        <li>Advanced AI features</li>
+                        <li>Enterprise features</li>
+                        <li>Documentation overhaul</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Success Metrics</h3>
+                <table>
+                    <tr><th>Metric</th><th>Baseline</th><th>Target</th><th>Timeline</th></tr>
+                    <tr><td>Startup Time</td><td>500ms</td><td>&lt;100ms</td><td>Phase 2</td></tr>
+                    <tr><td>Memory Usage</td><td>200MB</td><td>&lt;100MB</td><td>Phase 2</td></tr>
+                    <tr><td>Tool Count</td><td>50</td><td>75+</td><td>Phase 3</td></tr>
+                    <tr><td>Plugin Count</td><td>0</td><td>20+</td><td>Phase 4</td></tr>
+                    <tr><td>Test Coverage</td><td>~60%</td><td>85%+</td><td>Ongoing</td></tr>
+                </table>
+            </div>
+        </section>
+
+        <footer style="margin-top: 50px; padding: 20px; text-align: center; color: var(--text-muted); border-top: 1px solid var(--border);">
+            <p>Cloud Coder Architecture Recommendations</p>
+            <p>Generated from comprehensive source analysis</p>
+            <p style="margin-top: 10px;"><em>Recommendations prioritize: Performance → Security → Features</em></p>
+        </footer>
+    </div>
+
+    <script>
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Coder - Complete Architecture Documentation</title>
+    <style>
+        :root {
+            --primary: #0ea5e9;
+            --primary-dark: #0284c7;
+            --secondary: #7c3aed;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #0f172a;
+            --bg-card: #1e293b;
+            --bg-hover: #334155;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        h2 { font-size: 1.8rem; margin: 30px 0 15px; color: var(--primary); border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+        h3 { font-size: 1.3rem; margin: 20px 0 10px; color: var(--secondary); }
+        .subtitle { color: var(--text-muted); margin-bottom: 30px; }
+        .nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: var(--bg-card);
+            border-radius: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .nav a {
+            color: var(--text);
+            text-decoration: none;
+            padding: 8px 16px;
+            background: var(--bg-hover);
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .nav a:hover { background: var(--primary); }
+        .card {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 1px solid var(--border);
+        }
+        .card:hover { border-color: var(--primary); }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .component-box {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-hover));
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            transition: transform 0.2s;
+        }
+        .component-box:hover { transform: translateY(-3px); border-color: var(--primary); }
+        .component-box h4 { color: var(--primary); margin-bottom: 10px; }
+        .component-box ul { margin-left: 20px; color: var(--text-muted); }
+        .component-box li { margin: 5px 0; }
+        .diagram {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        .diagram svg { max-width: 100%; height: auto; }
+        .flow-box {
+            display: inline-block;
+            padding: 10px 20px;
+            background: var(--primary);
+            border-radius: 6px;
+            margin: 5px;
+            text-align: center;
+        }
+        .flow-arrow { color: var(--text-muted); font-size: 1.5rem; }
+        details {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        details[open] { border-color: var(--primary); }
+        summary {
+            padding: 15px 20px;
+            cursor: pointer;
+            background: var(--bg-hover);
+            font-weight: 600;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        summary:hover { background: var(--bg-hover); }
+        summary::after { content: '+'; font-size: 1.5rem; }
+        details[open] summary::after { content: '-'; }
+        .details-content { padding: 20px; border-top: 1px solid var(--border); }
+        code {
+            background: var(--bg);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            color: var(--primary);
+        }
+        pre {
+            background: var(--bg);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        pre code { background: none; padding: 0; }
+        .tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin: 2px;
+        }
+        .tag-core { background: var(--primary); }
+        .tag-tool { background: var(--secondary); }
+        .tag-service { background: var(--success); }
+        .tag-ui { background: var(--warning); color: var(--bg); }
+        .tag-bridge { background: var(--danger); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        th { background: var(--bg-hover); color: var(--primary); }
+        tr:hover { background: var(--bg-hover); }
+        .highlight { color: var(--primary); font-weight: 600; }
+        .warning { background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--warning); padding: 15px; margin: 15px 0; }
+        .info { background: rgba(14, 165, 233, 0.1); border-left: 4px solid var(--primary); padding: 15px; margin: 15px 0; }
+        .tree {
+            font-family: monospace;
+            background: var(--bg);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        .tree-node::before { content: '├── '; color: var(--text-muted); }
+        .tree-node:last-child::before { content: '└── '; }
+        .tree-root { font-weight: 600; color: var(--primary); }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-color { width: 20px; height: 20px; border-radius: 4px; }
+        .toc {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .toc ul { margin-left: 20px; }
+        .toc li { margin: 8px 0; }
+        .toc a { color: var(--text-muted); text-decoration: none; }
+        .toc a:hover { color: var(--primary); }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        .stat-value { font-size: 2rem; color: var(--primary); font-weight: 700; }
+        .stat-label { color: var(--text-muted); margin-top: 5px; }
+        .search-box {
+            width: 100%;
+            padding: 15px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1rem;
+            margin: 15px 0;
+        }
+        .search-box:focus { outline: none; border-color: var(--primary); }
+
+        /* Interactive Flow Simulator Styles */
+        .flow-simulator {
+            background: var(--bg-card);
+            border: 2px solid var(--primary);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        .flow-simulator h3 {
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        .prompt-input-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .prompt-input {
+            flex: 1;
+            padding: 15px 20px;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .prompt-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(14, 165, 233, 0.2);
+        }
+        .simulate-btn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .simulate-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(14, 165, 233, 0.4);
+        }
+        .simulate-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .flow-stages {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .flow-stage {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: var(--bg);
+            border-radius: 10px;
+            border-left: 4px solid var(--border);
+            opacity: 0.3;
+            transition: all 0.5s;
+        }
+        .flow-stage.active {
+            opacity: 1;
+            border-left-color: var(--primary);
+            background: linear-gradient(90deg, rgba(14, 165, 233, 0.1), var(--bg));
+        }
+        .flow-stage.completed {
+            opacity: 1;
+            border-left-color: var(--success);
+        }
+        .stage-number {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+            transition: all 0.3s;
+        }
+        .flow-stage.active .stage-number {
+            background: var(--primary);
+            animation: pulse 1s infinite;
+        }
+        .flow-stage.completed .stage-number {
+            background: var(--success);
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .stage-content {
+            flex: 1;
+        }
+        .stage-title {
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 5px;
+        }
+        .stage-description {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .stage-data {
+            background: var(--bg-card);
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.85rem;
+            color: var(--primary);
+            border: 1px solid var(--border);
+        }
+        .stage-data .data-label {
+            color: var(--text-muted);
+        }
+        .stage-tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .tool-tag {
+            padding: 3px 10px;
+            background: var(--secondary);
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        .stage-decision {
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+        .decision-allow {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+        .decision-ask {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid var(--warning);
+            color: var(--warning);
+        }
+        .decision-deny {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+        .flow-arrow {
+            width: 3px;
+            height: 20px;
+            background: var(--border);
+            margin-left: 17px;
+            transition: all 0.3s;
+        }
+        .flow-arrow.active {
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+        }
+        .flow-arrow.completed {
+            background: var(--success);
+        }
+        .preset-prompts {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .preset-btn {
+            padding: 8px 15px;
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .preset-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .progress-bar {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cloud Coder Architecture</h1>
+        <p class="subtitle">Complete Interactive Documentation - Version 0.1.10</p>
+
+        <div class="nav">
+            <a href="#overview">Overview</a>
+            <a href="#simulator">Interactive Simulator</a>
+            <a href="#architecture">Architecture</a>
+            <a href="#components">Components</a>
+            <a href="#dataflow">Data Flow</a>
+            <a href="#tools">Tool System</a>
+            <a href="#providers">Providers</a>
+            <a href="#permissions">Permissions</a>
+            <a href="#state">State</a>
+            <a href="#bridge">Bridge/Remote</a>
+            <a href="#query">Query Loop</a>
+            <a href="#build">Build System</a>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">57</div>
+                <div class="stat-label">Source Directories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">373+</div>
+                <div class="stat-label">Utility Files</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">50+</div>
+                <div class="stat-label">Built-in Tools</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">10+</div>
+                <div class="stat-label">LLM Providers</div>
+            </div>
+        </div>
+
+        <section id="overview">
+            <h2>1. Project Overview</h2>
+            <div class="card">
+                <p><strong>Cloud Coder</strong> is an AI coding assistant CLI tool that provides a unified interface for multiple LLM providers, with a focus on hybrid cloud/local inference through Ollama Cloud.</p>
+                <br>
+                <p><strong>Key Capabilities:</strong></p>
+                <ul>
+                    <li>Run 480B+ parameter models on Ollama Cloud while using local hardware for smaller tasks</li>
+                    <li>One CLI across all backends: OpenAI, Gemini, GitHub Models, Codex, Ollama (local + cloud), Atomic Chat, Bedrock, Vertex, Foundry</li>
+                    <li>Complete agent workflows: bash, file tools, grep, glob, agents, tasks, MCP, and web tools</li>
+                    <li>VS Code extension for launch integration and theme support</li>
+                    <li>Headless gRPC server for CI/CD integration</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Tech Stack</h3>
+                <table>
+                    <tr><th>Category</th><th>Technology</th></tr>
+                    <tr><td>Runtime</td><td>Node.js 20+, Bun for build/test</td></tr>
+                    <tr><td>Language</td><td>TypeScript (ES2022, ESNext modules)</td></tr>
+                    <tr><td>UI Framework</td><td>React 19 + Ink (terminal UI)</td></tr>
+                    <tr><td>State Management</td><td>Zustand-style stores</td></tr>
+                    <tr><td>Build System</td><td>Custom Bun bundler with feature flags</td></tr>
+                    <tr><td>Testing</td><td>Bun test runner with coverage</td></tr>
+                    <tr><td>API SDKs</td><td>@anthropic-ai/sdk, OpenAI, Gemini, MCP SDK</td></tr>
+                </table>
+            </div>
+        </section>
+
+        <section id="simulator">
+            <h2>Interactive Flow Simulator</h2>
+            <div class="flow-simulator">
+                <h3>Watch Your Prompt Flow Through Cloud Coder</h3>
+                <p style="color: var(--text-muted); margin-bottom: 20px;">
+                    Enter a prompt below to see how it moves through each component, what tools are used, and what decisions are made.
+                </p>
+
+                <div class="preset-prompts">
+                    <button class="preset-btn" onclick="setPrompt('Fix the bug in src/utils/api.ts')">🐛 Fix a bug</button>
+                    <button class="preset-btn" onclick="setPrompt('Add a new endpoint to the API')">➕ Add feature</button>
+                    <button class="preset-btn" onclick="setPrompt('Delete all .tmp files in the project')">🗑️ Delete files</button>
+                    <button class="preset-btn" onclick="setPrompt('Explain how the authentication works')">📖 Explain code</button>
+                    <button class="preset-btn" onclick="setPrompt('Run tests and fix any failures')">🧪 Run tests</button>
+                    <button class="preset-btn" onclick="setPrompt('git commit -m &quot;update&quot; and push')">git Git operations</button>
+                </div>
+
+                <div class="prompt-input-container">
+                    <input type="text" class="prompt-input" id="promptInput" placeholder="Enter your prompt here..." />
+                    <button class="simulate-btn" id="simulateBtn" onclick="simulateFlow()">Simulate Flow</button>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+
+                <div class="flow-stages" id="flowStages">
+                    <!-- Stages will be populated by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <section id="architecture">
+            <h2>2. High-Level Architecture</h2>
+
+            <div class="diagram">
+                <h3>System Architecture Diagram</h3>
+                <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Background -->
+                    <rect width="1200" height="800" fill="#1e293b"/>
+
+                    <!-- CLI Entry Layer -->
+                    <rect x="50" y="20" width="1100" height="80" rx="10" fill="#0ea5e9" opacity="0.2"/>
+                    <rect x="50" y="20" width="1100" height="80" rx="10" stroke="#0ea5e9" stroke-width="2" fill="none"/>
+                    <text x="600" y="50" text-anchor="middle" fill="#0ea5e9" font-size="16" font-weight="bold">CLI Entry Layer (src/entrypoints/)</text>
+                    <text x="600" y="75" text-anchor="middle" fill="#94a3b8" font-size="12">cli.tsx, agentSdkTypes.ts, init.ts</text>
+
+                    <!-- Main Loop -->
+                    <rect x="50" y="120" width="500" height="150" rx="10" fill="#7c3aed" opacity="0.2"/>
+                    <rect x="50" y="120" width="500" height="150" rx="10" stroke="#7c3aed" stroke-width="2" fill="none"/>
+                    <text x="300" y="150" text-anchor="middle" fill="#7c3aed" font-size="16" font-weight="bold">Main Loop (src/main.tsx)</text>
+                    <text x="300" y="180" text-anchor="middle" fill="#94a3b8" font-size="12">- Command parsing</text>
+                    <text x="300" y="200" text-anchor="middle" fill="#94a3b8" font-size="12">- Settings initialization</text>
+                    <text x="300" y="220" text-anchor="middle" fill="#94a3b8" font-size="12">- State provider setup</text>
+                    <text x="300" y="240" text-anchor="middle" fill="#94a3b8" font-size="12">- Plugin/skill loading</text>
+                    <text x="300" y="260" text-anchor="middle" fill="#94a3b8" font-size="12">- REPL launch</text>
+
+                    <!-- Query Engine -->
+                    <rect x="600" y="120" width="550" height="150" rx="10" fill="#10b981" opacity="0.2"/>
+                    <rect x="600" y="120" width="550" height="150" rx="10" stroke="#10b981" stroke-width="2" fill="none"/>
+                    <text x="875" y="150" text-anchor="middle" fill="#10b981" font-size="16" font-weight="bold">Query Engine (src/query.ts)</text>
+                    <text x="875" y="180" text-anchor="middle" fill="#94a3b8" font-size="12">- Token budget management</text>
+                    <text x="875" y="200" text-anchor="middle" fill="#94a3b8" font-size="12">- API request construction</text>
+                    <text x="875" y="220" text-anchor="middle" fill="#94a3b8" font-size="12">- Streaming response handling</text>
+                    <text x="875" y="240" text-anchor="middle" fill="#94a3b8" font-size="12">- Tool orchestration loop</text>
+                    <text x="875" y="260" text-anchor="middle" fill="#94a3b8" font-size="12">- Context compaction</text>
+
+                    <!-- Arrow from CLI to Main -->
+                    <line x1="300" y1="100" x2="300" y2="115" stroke="#0ea5e9" stroke-width="3" marker-end="url(#arrowhead)"/>
+
+                    <!-- Arrow from Main to Query -->
+                    <line x1="550" y1="195" x2="590" y2="195" stroke="#7c3aed" stroke-width="3" marker-end="url(#arrowhead)"/>
+
+                    <!-- Bridge Layer -->
+                    <rect x="50" y="290" width="1100" height="120" rx="10" fill="#ef4444" opacity="0.2"/>
+                    <rect x="50" y="290" width="1100" height="120" rx="10" stroke="#ef4444" stroke-width="2" fill="none"/>
+                    <text x="600" y="320" text-anchor="middle" fill="#ef4444" font-size="16" font-weight="bold">Bridge Layer (src/bridge/)</text>
+                    <text x="600" y="350" text-anchor="middle" fill="#94a3b8" font-size="12">bridgeMain.ts | replBridge.ts | remoteBridgeCore.ts</text>
+                    <text x="300" y="380" text-anchor="middle" fill="#94a3b8" font-size="12">- Session management</text>
+                    <text x="500" y="380" text-anchor="middle" fill="#94a3b8" font-size="12">- JWT/OAuth handling</text>
+                    <text x="700" y="380" text-anchor="middle" fill="#94a3b8" font-size="12">- Remote control protocol</text>
+                    <text x="950" y="380" text-anchor="middle" fill="#94a3b8" font-size="12">- Capacity wake/scheduling</text>
+
+                    <!-- Provider Layer -->
+                    <rect x="50" y="430" width="350" height="140" rx="10" fill="#f59e0b" opacity="0.2"/>
+                    <rect x="50" y="430" width="350" height="140" rx="10" stroke="#f59e0b" stroke-width="2" fill="none"/>
+                    <text x="225" y="460" text-anchor="middle" fill="#f59e0b" font-size="16" font-weight="bold">Provider Layer (src/services/api/)</text>
+                    <text x="225" y="490" text-anchor="middle" fill="#94a3b8" font-size="11">claude.ts | openai.ts | gemini.ts | ollama.ts</text>
+                    <text x="225" y="520" text-anchor="middle" fill="#94a3b8" font-size="11">- API client abstraction</text>
+                    <text x="225" y="540" text-anchor="middle" fill="#94a3b8" font-size="11">- Model routing</text>
+                    <text x="225" y="560" text-anchor="middle" fill="#94a3b8" font-size="11">- Token counting</text>
+
+                    <!-- Tool Layer -->
+                    <rect x="420" y="430" width="380" height="140" rx="10" fill="#8b5cf6" opacity="0.2"/>
+                    <rect x="420" y="430" width="380" height="140" rx="10" stroke="#8b5cf6" stroke-width="2" fill="none"/>
+                    <text x="610" y="460" text-anchor="middle" fill="#8b5cf6" font-size="16" font-weight="bold">Tool System (src/tools/)</text>
+                    <text x="610" y="490" text-anchor="middle" fill="#94a3b8" font-size="11">50+ built-in tools + MCP tools</text>
+                    <text x="610" y="520" text-anchor="middle" fill="#94a3b8" font-size="11">- BashTool | FileRead/Write/Edit</text>
+                    <text x="610" y="540" text-anchor="middle" fill="#94a3b8" font-size="11">- AgentTool | SkillTool | Task tools</text>
+                    <text x="610" y="560" text-anchor="middle" fill="#94a3b8" font-size="11">- WebSearch/Fetch | MCP tools</text>
+
+                    <!-- State Layer -->
+                    <rect x="820" y="430" width="330" height="140" rx="10" fill="#06b6d4" opacity="0.2"/>
+                    <rect x="820" y="430" width="330" height="140" rx="10" stroke="#06b6d4" stroke-width="2" fill="none"/>
+                    <text x="985" y="460" text-anchor="middle" fill="#06b6d4" font-size="16" font-weight="bold">State Management</text>
+                    <text x="985" y="490" text-anchor="middle" fill="#94a3b8" font-size="11">AppState.tsx | AppStateStore.ts</text>
+                    <text x="985" y="520" text-anchor="middle" fill="#94a3b8" font-size="11">- Zustand-style store</text>
+                    <text x="985" y="540" text-anchor="middle" fill="#94a3b8" font-size="11">- React context provider</text>
+                    <text x="985" y="560" text-anchor="middle" fill="#94a3b8" font-size="11">- useAppState hooks</text>
+
+                    <!-- UI Layer -->
+                    <rect x="50" y="590" width="550" height="120" rx="10" fill="#ec4899" opacity="0.2"/>
+                    <rect x="50" y="590" width="550" height="120" rx="10" stroke="#ec4899" stroke-width="2" fill="none"/>
+                    <text x="325" y="620" text-anchor="middle" fill="#ec4899" font-size="16" font-weight="bold">UI Layer (src/ink/ + src/components/)</text>
+                    <text x="325" y="650" text-anchor="middle" fill="#94a3b8" font-size="11">Ink terminal renderer + 153 React components</text>
+                    <text x="150" y="680" text-anchor="middle" fill="#94a3b8" font-size="11">- REPL.tsx (main UI)</text>
+                    <text x="325" y="680" text-anchor="middle" fill="#94a3b8" font-size="11">- Transcript rendering</text>
+                    <text x="500" y="680" text-anchor="middle" fill="#94a3b8" font-size="11">- Permission dialogs</text>
+
+                    <!-- MCP Layer -->
+                    <rect x="620" y="590" width="530" height="120" rx="10" fill="#14b8a6" opacity="0.2"/>
+                    <rect x="620" y="590" width="530" height="120" rx="10" stroke="#14b8a6" stroke-width="2" fill="none"/>
+                    <text x="885" y="620" text-anchor="middle" fill="#14b8a6" font-size="16" font-weight="bold">MCP Layer (src/services/mcp/)</text>
+                    <text x="885" y="650" text-anchor="middle" fill="#94a3b8" font-size="11">client.ts | config.ts | oauth.ts</text>
+                    <text x="720" y="680" text-anchor="middle" fill="#94a3b8" font-size="11">- Server connections (stdio/SSE/WS)</text>
+                    <text x="1050" y="680" text-anchor="middle" fill="#94a3b8" font-size="11">- OAuth/XAA authentication</text>
+
+                    <!-- Arrows -->
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#0ea5e9"/>
+                        </marker>
+                    </defs>
+                    <line x1="300" y1="270" x2="300" y2="285" stroke="#7c3aed" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <line x1="875" y1="270" x2="875" y2="285" stroke="#10b981" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <line x1="225" y1="410" x2="225" y2="425" stroke="#ef4444" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <line x1="610" y1="410" x2="610" y2="425" stroke="#ef4444" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    <line x1="985" y1="410" x2="985" y2="425" stroke="#ef4444" stroke-width="2" marker-end="url(#arrowhead)"/>
+                </svg>
+            </div>
+
+            <div class="card">
+                <h3>Repository Structure</h3>
+                <div class="tree">
+                    <div class="tree-root">openclaude/</div>
+                    <div class="tree-node">src/ <span class="tag tag-core">Core Runtime</span></div>
+                    <div class="tree-node" style="margin-left: 20px;">bridge/ <span class="tag tag-bridge">35 files - Remote session management</span></div>
+                    <div class="tree-node" style="margin-left: 20px;">cli/ <span class="tag tag-core">CLI entrypoints</span></div>
+                    <div class="tree-node" style="margin-left: 20px;">commands/ <span class="tag tag-core">89 slash commands</span></div>
+                    <div class="tree-node" style="margin-left: 20px;">components/ <span class="tag tag-ui">153 React components</span></div>
+                    <div class="tree-node" style="margin-left: 20px;">entrypoints/ <span class="tag tag-core">Application entry points</span></div>
+                    <div class="tree-node" style="margin-left: 20px;">hooks/ <span class="tag tag-ui">React hooks</span></div>
+                    <div class="tree-node" style="margin-left: 20px;">ink/ <span class="tag tag-ui">Terminal renderer</span></div>
+                    <div class="tree-node" style="margin-left: 20px;">services/ <span class="tag tag-service">40 service directories</span></div>
+                    <div class="tree-node" style="margin-left: 20px;">tools/ <span class="tag tag-tool">50 tool implementations</span></div>
+                    <div class="tree-node" style="margin-left: 20px;">utils/ <span class="tag tag-core">373 utility files</span></div>
+                    <div class="tree-node">scripts/ <span class="tag tag-core">Build & maintenance</span></div>
+                    <div class="tree-node">docs/ <span class="tag tag-core">Documentation</span></div>
+                    <div class="tree-node">python/ <span class="tag tag-core">Python helpers</span></div>
+                    <div class="tree-node">vscode-extension/ <span class="tag tag-ui">VS Code integration</span></div>
+                    <div class="tree-node">bin/ <span class="tag tag-core">CLI launchers</span></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="components">
+            <h2>3. Core Components</h2>
+
+            <div class="grid">
+                <div class="component-box">
+                    <h4>CLI Entry (src/entrypoints/cli.tsx)</h4>
+                    <ul>
+                        <li>Command-line argument parsing</li>
+                        <li>Environment variable setup</li>
+                        <li>Migration execution</li>
+                        <li>Settings initialization</li>
+                        <li>REPL launch coordination</li>
+                    </ul>
+                </div>
+
+                <div class="component-box">
+                    <h4>Main Loop (src/main.tsx)</h4>
+                    <ul>
+                        <li>Startup profiling</li>
+                        <li>MDM/keychain prefetch</li>
+                        <li>GrowthBook initialization</li>
+                        <li>Plugin/skill loading</li>
+                        <li>Deferred prefetches</li>
+                    </ul>
+                </div>
+
+                <div class="component-box">
+                    <h4>Query Engine (src/query.ts)</h4>
+                    <ul>
+                        <li>API request construction</li>
+                        <li>Streaming response handling</li>
+                        <li>Token budget management</li>
+                        <li>Tool orchestration loop</li>
+                        <li>Context compaction triggers</li>
+                    </ul>
+                </div>
+
+                <div class="component-box">
+                    <h4>Bridge (src/bridge/bridgeMain.ts)</h4>
+                    <ul>
+                        <li>Remote session management</li>
+                        <li>JWT token refresh</li>
+                        <li>Environment heartbeat</li>
+                        <li>Capacity scheduling</li>
+                        <li>Session ingress auth</li>
+                    </ul>
+                </div>
+
+                <div class="component-box">
+                    <h4>Tool System (src/Tool.ts)</h4>
+                    <ul>
+                        <li>Tool interface definition</li>
+                        <li>Permission checking</li>
+                        <li>Input validation</li>
+                        <li>Progress reporting</li>
+                        <li>Result rendering</li>
+                    </ul>
+                </div>
+
+                <div class="component-box">
+                    <h4>State (src/state/AppState.tsx)</h4>
+                    <ul>
+                        <li>Zustand-style store</li>
+                        <li>React context provider</li>
+                        <li>useAppState hooks</li>
+                        <li>Settings change detection</li>
+                        <li>Tool permission context</li>
+                    </ul>
+                </div>
+
+                <div class="component-box">
+                    <h4>Commands (src/commands.ts)</h4>
+                    <ul>
+                        <li>140+ slash commands</li>
+                        <li>Local JSX commands</li>
+                        <li>Remote commands</li>
+                        <li>Plugin commands</li>
+                        <li>Skill commands</li>
+                    </ul>
+                </div>
+
+                <div class="component-box">
+                    <h4>MCP Client (src/services/mcp/)</h4>
+                    <ul>
+                        <li>Server connections</li>
+                        <li>OAuth/XAA auth</li>
+                        <li>Resource listing</li>
+                        <li>Tool discovery</li>
+                        <li>Config management</li>
+                    </ul>
+                </div>
+
+                <div class="component-box">
+                    <h4>Permissions (src/utils/permissions/)</h4>
+                    <ul>
+                        <li>Rule parsing</li>
+                        <li>Auto-mode classifier</li>
+                        <li>Denial tracking</li>
+                        <li>Hook execution</li>
+                        <li>Sandbox decisions</li>
+                    </ul>
+                </div>
+
+                <div class="component-box">
+                    <h4>Providers (src/services/api/)</h4>
+                    <ul>
+                        <li>First-party Anthropic</li>
+                        <li>OpenAI/Gemini/Bedrock</li>
+                        <li>Vertex/Foundry</li>
+                        <li>Ollama local/cloud</li>
+                        <li>GitHub Models</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="dataflow">
+            <h2>4. Data Flow</h2>
+
+            <details open>
+                <summary>Startup Flow</summary>
+                <div class="details-content">
+                    <div class="diagram">
+                        <div class="flow-box">Process Start</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">prefetch.ts (MDM/Keychain)</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">cli.tsx (Parse Args)</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">main.tsx (Init)</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Migrations</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Settings Load</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Plugin/Skill Load</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">REPL Launch</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Deferred Prefetches</div>
+                    </div>
+                    <h4>Key Files:</h4>
+                    <ul>
+                        <li><code>src/bootstrap/prefetch.ts</code> - Early async prefetches</li>
+                        <li><code>src/entrypoints/cli.tsx</code> - CLI argument parsing</li>
+                        <li><code>src/main.tsx</code> - Main initialization</li>
+                        <li><code>src/migrations/</code> - Data migrations</li>
+                        <li><code>src/utils/settings/settings.ts</code> - Settings loading</li>
+                        <li><code>src/utils/plugins/pluginLoader.ts</code> - Plugin loading</li>
+                    </ul>
+                </div>
+            </details>
+
+            <details>
+                <summary>Query Loop Flow</summary>
+                <div class="details-content">
+                    <div class="diagram">
+                        <div class="flow-box">User Message</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">buildQueryConfig()</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">normalizeMessagesForAPI()</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">API Request</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Stream Response</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Tool Detection</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Tool Execution</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Tool Results</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Follow-up Request</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Continue or Complete</div>
+                    </div>
+                    <h4>Key Files:</h4>
+                    <ul>
+                        <li><code>src/query.ts</code> - Main query loop</li>
+                        <li><code>src/query/config.ts</code> - Query configuration</li>
+                        <li><code>src/query/tokenBudget.ts</code> - Token management</li>
+                        <li><code>src/services/tools/toolOrchestration.ts</code> - Tool execution</li>
+                        <li><code>src/utils/messages.ts</code> - Message normalization</li>
+                    </ul>
+                </div>
+            </details>
+
+            <details>
+                <summary>Tool Execution Flow</summary>
+                <div class="details-content">
+                    <div class="diagram">
+                        <div class="flow-box">Model Tool Call</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">StreamingToolExecutor</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">validateInput()</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">checkPermissions()</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Permission Dialog</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">tool.call()</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Progress Updates</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Tool Result</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">renderToolResultMessage()</div>
+                    </div>
+                    <h4>Key Files:</h4>
+                    <ul>
+                        <li><code>src/services/tools/StreamingToolExecutor.ts</code> - Tool orchestration</li>
+                        <li><code>src/utils/permissions/permissions.ts</code> - Permission checking</li>
+                        <li><code>src/Tool.ts</code> - Tool interface</li>
+                        <li><code>src/tools/*/</code> - Individual tool implementations</li>
+                    </ul>
+                </div>
+            </details>
+
+            <details>
+                <summary>Remote Bridge Flow</summary>
+                <div class="details-content">
+                    <div class="diagram">
+                        <div class="flow-box">Bridge Loop Start</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Register Worker</div>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Poll for Work</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Spawn Session</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Heartbeat Loop</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Token Refresh</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Session Complete</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-box">Report Result</div>
+                    </div>
+                    <h4>Key Files:</h4>
+                    <ul>
+                        <li><code>src/bridge/bridgeMain.ts</code> - Main bridge loop</li>
+                        <li><code>src/bridge/workSecret.ts</code> - Worker registration</li>
+                        <li><code>src/bridge/sessionRunner.ts</code> - Session spawning</li>
+                        <li><code>src/bridge/jwtUtils.ts</code> - Token management</li>
+                    </ul>
+                </div>
+            </details>
+        </section>
+
+        <section id="tools">
+            <h2>5. Tool System</h2>
+
+            <div class="card">
+                <h3>Tool Interface (src/Tool.ts)</h3>
+                <p>The <code>Tool</code> type defines the complete interface for all tools:</p>
+                <pre><code>export type Tool&lt;Input, Output, Progress&gt; = {
+  name: string
+  aliases?: string[]
+  searchHint?: string
+  inputSchema: Zod schema
+  outputSchema?: Zod schema
+
+  // Core execution
+  call(args, context, canUseTool, onProgress): Promise&lt;ToolResult&gt;
+  description(input, options): Promise&lt;string&gt;
+
+  // Permission & validation
+  validateInput?(input, context): Promise&lt;ValidationResult&gt;
+  checkPermissions(input, context): Promise&lt;PermissionResult&gt;
+  isConcurrencySafe(input): boolean
+  isReadOnly(input): boolean
+  isDestructive?(input): boolean
+
+  // UI rendering
+  renderToolUseMessage(input, options): React.ReactNode
+  renderToolResultMessage(output, options): React.ReactNode
+  renderToolUseProgressMessage?(progress, options): React.ReactNode
+  getActivityDescription?(input): string | null
+
+  // Lifecycle
+  isEnabled(): boolean
+  interruptBehavior?(): 'cancel' | 'block'
+}</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>Built-in Tools</h3>
+                <table>
+                    <tr><th>Category</th><th>Tools</th></tr>
+                    <tr>
+                        <td><strong>File Operations</strong></td>
+                        <td>FileReadTool, FileEditTool, FileWriteTool, NotebookEditTool, GlobTool, GrepTool</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Shell</strong></td>
+                        <td>BashTool, PowerShellTool, REPLTool</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Agent</strong></td>
+                        <td>AgentTool, SkillTool, TaskCreate/Get/Update/List/Stop</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Web</strong></td>
+                        <td>WebSearchTool, WebFetchTool, WebBrowserTool</td>
+                    </tr>
+                    <tr>
+                        <td><strong>MCP</strong></td>
+                        <td>ListMcpResourcesTool, ReadMcpResourceTool, McpAuthTool</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Workflow</strong></td>
+                        <td>EnterPlanModeTool, ExitPlanModeTool, EnterWorktreeTool, ExitWorktreeTool</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Communication</strong></td>
+                        <td>AskUserQuestionTool, SendMessageTool, SendUserFileTool</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Utilities</strong></td>
+                        <td>TodoWriteTool, ConfigTool, TungstenTool, BriefTool</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>Tool Assembly</h3>
+                <p>Tools are assembled in <code>src/tools.ts</code> with feature-flag gating:</p>
+                <pre><code>export function getAllBaseTools(): Tools {
+  return [
+    AgentTool,
+    TaskOutputTool,
+    BashTool,
+    ...(hasEmbeddedSearchTools() ? [] : [GlobTool, GrepTool]),
+    ExitPlanModeV2Tool,
+    FileReadTool,
+    FileEditTool,
+    FileWriteTool,
+    // ... 40+ more tools
+    ...(isWorktreeModeEnabled() ? [EnterWorktreeTool, ExitWorktreeTool] : []),
+    ...(isAgentSwarmsEnabled() ? [getTeamCreateTool(), getTeamDeleteTool()] : []),
+  ]
+}</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>MCP Tool Integration</h3>
+                <p>MCP tools are discovered from connected servers and merged with built-in tools:</p>
+                <pre><code>export function assembleToolPool(
+  permissionContext: ToolPermissionContext,
+  mcpTools: Tools,
+): Tools {
+  const builtInTools = getTools(permissionContext)
+  const allowedMcpTools = filterToolsByDenyRules(mcpTools, permissionContext)
+
+  // Deduplicate by name (built-in tools take precedence)
+  return uniqBy(
+    [...builtInTools].sort(byName).concat(allowedMcpTools.sort(byName)),
+    'name',
+  )
+}</code></pre>
+            </div>
+        </section>
+
+        <section id="providers">
+            <h2>6. Provider System</h2>
+
+            <div class="card">
+                <h3>Provider Detection (src/utils/model/providers.ts)</h3>
+                <pre><code>export function getAPIProvider(): APIProvider {
+  return isEnvTruthy(process.env.CLAUDE_CODE_USE_GEMINI)
+    ? 'gemini'
+    : isEnvTruthy(process.env.CLAUDE_CODE_USE_GITHUB)
+      ? 'github'
+      : isEnvTruthy(process.env.CLAUDE_CODE_USE_OPENAI)
+        ? isCodexModel() ? 'codex' : 'openai'
+        : isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK)
+          ? 'bedrock'
+          : isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX)
+            ? 'vertex'
+            : isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY)
+              ? 'foundry'
+              : 'firstParty'
+}</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>Supported Providers</h3>
+                <table>
+                    <tr><th>Provider</th><th>Env Var</th><th>Setup Command</th></tr>
+                    <tr><td>Anthropic (First-party)</td><td>ANTHROPIC_API_KEY</td><td>/login</td></tr>
+                    <tr><td>OpenAI-compatible</td><td>CLAUDE_CODE_USE_OPENAI</td><td>/provider</td></tr>
+                    <tr><td>Gemini</td><td>CLAUDE_CODE_USE_GEMINI</td><td>/provider</td></tr>
+                    <tr><td>GitHub Models</td><td>CLAUDE_CODE_USE_GITHUB</td><td>/onboard-github</td></tr>
+                    <tr><td>Codex</td><td>OPENAI_MODEL=codex-*</td><td>/provider</td></tr>
+                    <tr><td>Ollama (local)</td><td>OPENAI_BASE_URL=http://localhost:11434</td><td>/provider</td></tr>
+                    <tr><td>Ollama Cloud</td><td>ollama signin</td><td>Automatic</td></tr>
+                    <tr><td>Bedrock</td><td>CLAUDE_CODE_USE_BEDROCK</td><td>Env setup</td></tr>
+                    <tr><td>Vertex</td><td>CLAUDE_CODE_USE_VERTEX</td><td>Env setup</td></tr>
+                    <tr><td>Foundry</td><td>CLAUDE_CODE_USE_FOUNDRY</td><td>Env setup</td></tr>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>Agent Routing</h3>
+                <p>Agent-based model routing via settings.json:</p>
+                <pre><code>{
+  "agentModels": {
+    "deepseek-chat": {
+      "base_url": "https://api.deepseek.com/v1",
+      "api_key": "sk-your-key"
+    },
+    "gpt-4o": {
+      "base_url": "https://api.openai.com/v1",
+      "api_key": "sk-your-key"
+    }
+  },
+  "agentRouting": {
+    "Explore": "deepseek-chat",
+    "Plan": "gpt-4o",
+    "general-purpose": "gpt-4o",
+    "default": "gpt-4o"
+  }
+}</code></pre>
+            </div>
+        </section>
+
+        <section id="permissions">
+            <h2>7. Permission System</h2>
+
+            <div class="card">
+                <h3>Permission Modes</h3>
+                <ul>
+                    <li><strong>default</strong> - Ask for dangerous operations</li>
+                    <li><strong>auto</strong> - Auto-approve with classifier oversight</li>
+                    <li><strong>bypass_permissions</strong> - Skip permission prompts</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Permission Rules</h3>
+                <p>Rules are parsed from settings and applied hierarchically:</p>
+                <pre><code>export type PermissionRule = {
+  source: PermissionRuleSource  // settings, cliArg, command, session
+  ruleBehavior: 'allow' | 'deny' | 'ask'
+  ruleValue: {
+    toolName: string
+    subcommand?: string
+  }
+}</code></pre>
+                <p>Example rules:</p>
+                <ul>
+                    <li><code>Bash(git *)</code> - Allow all git commands</li>
+                    <li><code>Read(src/*)</code> - Allow reading src directory</li>
+                    <li><code>Edit</code> - Ask for all edit operations</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Auto-Mode Classifier</h3>
+                <p>The transcript classifier analyzes bash commands for security risks:</p>
+                <pre><code>// src/utils/permissions/yoloClassifier.ts
+export function classifyYoloAction(transcript: string): {
+  action: 'approve' | 'reject' | 'ask'
+  reason: string
+  confidence: number
+}</code></pre>
+                <p>Classifiers include:</p>
+                <ul>
+                    <li>Destructive command detection (rm -rf, chmod, etc.)</li>
+                    <li>Network exfiltration detection (curl to unknown hosts)</li>
+                    <li>Privilege escalation detection (sudo patterns)</li>
+                    <li>Supply chain attack detection (npm install from URLs)</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Denial Tracking</h3>
+                <p>Auto-mode tracks denials per tool and falls back to prompting after threshold:</p>
+                <pre><code>export const DENIAL_LIMITS = {
+  BashTool: 3,
+  FileEditTool: 2,
+  FileWriteTool: 2,
+  default: 3,
+}
+
+export function shouldFallbackToPrompting(
+  state: DenialTrackingState,
+  toolName: string,
+): boolean {
+  const limit = DENIAL_LIMITS[toolName] || DENIAL_LIMITS.default
+  return (state.toolDenials.get(toolName) || 0) >= limit
+}</code></pre>
+            </div>
+        </section>
+
+        <section id="state">
+            <h2>8. State Management</h2>
+
+            <div class="card">
+                <h3>AppState Structure</h3>
+                <pre><code>export type AppState = {
+  // Session state
+  sessionId: UUID
+  messages: Message[]
+  mainLoopModel: string
+
+  // Tool state
+  toolPermissionContext: ToolPermissionContext
+  mcp: {
+    servers: MCPServerConnection[]
+    resources: Record<string, ServerResource[]>
+    tools: Tools
+  }
+
+  // UI state
+  verbose: boolean
+  theme: ThemeName
+  permissionMode: PermissionMode
+
+  // Task state
+  tasks: Task[]
+  taskLists: TaskList[]
+
+  // Agent state
+  agents: AgentDefinition[]
+
+  // Settings
+  settings: Settings
+  settingsErrors: Map<string, ValidationError>
+}</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>State Provider Pattern</h3>
+                <pre><code>// src/state/AppState.tsx
+export const AppStoreContext = React.createContext&lt;AppStateStore | null&gt;(null)
+
+export function useAppState&lt;T&gt;(selector: (state: AppState) =&gt; T): T {
+  const store = useContext(AppStoreContext)
+  const selectorRef = React.useRef(selector)
+  const storeRef = React.useRef(store)
+
+  const get = React.useCallback(() =&gt; {
+    return selectorRef.current(storeRef.current.getState())
+  }, [])
+
+  return useSyncExternalStore(store.subscribe, get, get)
+}
+
+export function useSetAppState() {
+  return useAppStore().setState
+}</code></pre>
+            </div>
+        </section>
+
+        <section id="bridge">
+            <h2>9. Bridge / Remote Control</h2>
+
+            <div class="card">
+                <h3>Bridge Architecture</h3>
+                <p>The bridge enables remote session management via claude.ai:</p>
+                <ul>
+                    <li><strong>Worker Registration</strong> - Daemon registers as worker with session ingress</li>
+                    <li><strong>Poll Loop</strong> - Polls for work assignments</li>
+                    <li><strong>Session Spawning</strong> - Spawns claude subprocesses for each work item</li>
+                    <li><strong>Heartbeat</strong> - Maintains lease on work items</li>
+                    <li><strong>Token Refresh</strong> - Proactively refreshes JWTs before expiry</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Key Bridge Files</h3>
+                <table>
+                    <tr><th>File</th><th>Purpose</th></tr>
+                    <tr><td>bridgeMain.ts</td><td>Main bridge loop, poll/heartbeat</td></tr>
+                    <tr><td>workSecret.ts</td><td>Worker registration, session URL building</td></tr>
+                    <tr><td>sessionRunner.ts</td><td>Session process spawning</td></tr>
+                    <tr><td>jwtUtils.ts</td><td>Token decoding, refresh scheduling</td></tr>
+                    <tr><td>bridgeApi.ts</td><td>HTTP API client for bridge endpoints</td></tr>
+                    <tr><td>trustedDevice.ts</td><td>Trusted device token management</td></tr>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>Session Ingress Auth</h3>
+                <pre><code>// src/utils/sessionIngressAuth.ts
+export async function getSessionIngressAuthToken(
+  sessionId: string,
+  environmentId: string,
+): Promise&lt;string&gt; {
+  // JWT with claims:
+  // - session_id: UUID
+  // - environment_id: UUID
+  // - exp: expiry timestamp
+  // Signed with session ingress secret
+}</code></pre>
+            </div>
+        </section>
+
+        <section id="query">
+            <h2>10. Query Loop Deep Dive</h2>
+
+            <div class="card">
+                <h3>Query Loop Iterations</h3>
+                <p>The query loop continues until completion or error:</p>
+                <ol>
+                    <li><strong>Build Config</strong> - Gather env vars, feature flags, model settings</li>
+                    <li><strong>Normalize Messages</strong> - Convert internal messages to API format</li>
+                    <li><strong>API Request</strong> - Send to provider with streaming</li>
+                    <li><strong>Stream Handling</strong> - Process text/tool_use blocks as they arrive</li>
+                    <li><strong>Tool Detection</strong> - Identify tool calls in response</li>
+                    <li><strong>Tool Execution</strong> - Run tools with permission checks</li>
+                    <li><strong>Result Processing</strong> - Convert results to API format</li>
+                    <li><strong>Continue Check</strong> - Determine if another iteration is needed</li>
+                </ol>
+            </div>
+
+            <div class="card">
+                <h3>Token Budget</h3>
+                <pre><code>// src/query/tokenBudget.ts
+export function checkTokenBudget(
+  state: TokenBudgetState,
+  currentTokens: number,
+): { shouldContinue: boolean; reason?: string } {
+  if (currentTokens &gt; state.budget) {
+    return { shouldContinue: false, reason: 'budget_exceeded' }
+  }
+  return { shouldContinue: true }
+}</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>Context Compaction</h3>
+                <p>When context exceeds limits, reactive compaction summarizes old messages:</p>
+                <ul>
+                    <li><strong>Trigger</strong> - Context tokens exceed threshold</li>
+                    <li><strong>Pre-compact</strong> - Run pre_compact hooks</li>
+                    <li><strong>Summarize</strong> - Generate summary of old messages</li>
+                    <li><strong>Replace</strong> - Replace summarized messages with summary</li>
+                    <li><strong>Post-compact</strong> - Run post_compact hooks</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="build">
+            <h2>11. Build System</h2>
+
+            <div class="card">
+                <h3>Feature Flags (scripts/build.ts)</h3>
+                <pre><code>const featureFlags: Record&lt;string, boolean&gt; = {
+  VOICE_MODE: false,
+  PROACTIVE: false,
+  KAIROS: false,
+  BRIDGE_MODE: false,
+  COORDINATOR_MODE: false,
+  CONTEXT_COLLAPSE: false,
+  BUDDY: true,
+  // ... 20+ feature flags
+}
+
+const result = await Bun.build({
+  entrypoints: ['./src/entrypoints/cli.tsx'],
+  outdir: './dist',
+  target: 'node',
+  format: 'esm',
+  define: {
+    'MACRO.VERSION': JSON.stringify('99.0.0'),
+    'MACRO.DISPLAY_VERSION': JSON.stringify(version),
+  },
+  plugins: [noTelemetryPlugin, bunBundleShim],
+})</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>Build-time Constants</h3>
+                <table>
+                    <tr><th>Constant</th><th>Value</th></tr>
+                    <tr><td>MACRO.VERSION</td><td>99.0.0 (internal compat)</td></tr>
+                    <tr><td>MACRO.DISPLAY_VERSION</td><td>package.json version</td></tr>
+                    <tr><td>MACRO.BUILD_TIME</td><td>ISO timestamp</td></tr>
+                    <tr><td>MACRO.ISSUES_EXPLAINER</td><td>GitHub issues URL</td></tr>
+                    <tr><td>MACRO.PACKAGE_URL</td><td>cloudcoder (npm)</td></tr>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>Stubbed Features</h3>
+                <p>Internal-only features are stubbed for the open build:</p>
+                <ul>
+                    <li>Daemon mode</li>
+                    <li>Background sessions</li>
+                    <li>Template jobs</li>
+                    <li>Environment runner</li>
+                    <li>Self-hosted runner</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="hooks">
+            <h2>12. Hook System</h2>
+
+            <div class="card">
+                <h3>Hook Types</h3>
+                <ul>
+                    <li><strong>pre_tool_use</strong> - Before tool execution</li>
+                    <li><strong>post_tool_use</strong> - After tool execution</li>
+                    <li><strong>pre_sample</strong> - Before API request</li>
+                    <li><strong>post_sample</strong> - After API response</li>
+                    <li><strong>pre_compact</strong> - Before context compaction</li>
+                    <li><strong>post_compact</strong> - After context compaction</li>
+                    <li><strong>session_start</strong> - At session start</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Hook Execution</h3>
+                <pre><code>// src/utils/hooks.ts
+export async function executePreToolUseHooks(
+  toolName: string,
+  input: Record&lt;string, unknown&gt;,
+  context: HookContext,
+): Promise&lt;HookResult&gt; {
+  const results = []
+  for (const hook of enabledHooks) {
+    if (hook.matches(toolName, input)) {
+      results.push(await hook.execute(toolName, input, context))
+    }
+  }
+  return combineHookResults(results)
+}</code></pre>
+            </div>
+        </section>
+
+        <section id="mcp">
+            <h2>13. MCP Integration</h2>
+
+            <div class="card">
+                <h3>MCP Server Config</h3>
+                <pre><code>// src/services/mcp/types.ts
+export type McpServerConfig =
+  | McpStdioServerConfig    // stdio transport
+  | McpSSEServerConfig      // SSE transport
+  | McpHTTPServerConfig     // HTTP transport
+  | McpWebSocketServerConfig // WS transport
+  | McpSdkServerConfig      // In-process SDK
+  | McpClaudeAIProxyServerConfig // Claude.ai proxy
+
+export type McpStdioServerConfig = {
+  type: 'stdio'
+  command: string
+  args: string[]
+  env?: Record&lt;string, string&gt;
+}</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>OAuth/XAA Authentication</h3>
+                <p>Cross-App Access (XAA) enables OAuth for MCP servers:</p>
+                <ul>
+                    <li>IdP connection configured in settings.xaaIdp</li>
+                    <li>Per-server OAuth via mcpServers[].oauth</li>
+                    <li>Token storage in secure keychain</li>
+                    <li>Automatic token refresh on expiry</li>
+                </ul>
+            </div>
+        </section>
+
+        <footer style="margin-top: 50px; padding: 20px; text-align: center; color: var(--text-muted); border-top: 1px solid var(--border);">
+            <p>Cloud Coder Architecture Documentation</p>
+            <p>Generated from source analysis of version 0.1.10</p>
+            <p style="margin-top: 10px;"><em>Last updated: April 2026</em></p>
+        </footer>
+    </div>
+
+    <script>
+        // Smooth scrolling for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Search functionality
+        const searchBox = document.createElement('input');
+        searchBox.type = 'text';
+        searchBox.className = 'search-box';
+        searchBox.placeholder = 'Search documentation...';
+        document.querySelector('.container').insertBefore(searchBox, document.querySelector('.container').firstChild);
+
+        searchBox.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            const sections = document.querySelectorAll('section, details, .card');
+
+            sections.forEach(section => {
+                const text = section.textContent.toLowerCase();
+                if (query === '' || text.includes(query)) {
+                    section.style.display = '';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+        });
+
+        // Expand all details on double-click
+        document.addEventListener('dblclick', function(e) {
+            if (e.target.tagName === 'SUMMARY') {
+                const parent = e.target.parentElement;
+                const allDetails = document.querySelectorAll('details');
+                const allOpen = Array.from(allDetails).every(d => d.open);
+                allDetails.forEach(d => d.open = !allOpen);
+            }
+        });
+
+        // ========== INTERACTIVE FLOW SIMULATOR ==========/
+
+        // Flow stages definition
+        const flowStagesData = [
+            {
+                title: '1. Input Capture (REPL)',
+                description: 'User prompt captured in REPL.tsx, parsed for commands',
+                component: 'src/ink/REPL.tsx',
+                dataTransform: 'Raw text → Message object with UUID',
+                tools: [],
+                decisions: []
+            },
+            {
+                title: '2. Command Processing',
+                description: 'Check if input is a slash command or natural language',
+                component: 'src/commands.ts',
+                dataTransform: 'Command detection → Local JSX or API query',
+                tools: [],
+                decisions: [
+                    { condition: 'Starts with /', action: 'Execute local command' },
+                    { condition: 'Natural language', action: 'Send to query engine' }
+                ]
+            },
+            {
+                title: '3. Context Assembly',
+                description: 'Build system prompt, user context, and message history',
+                component: 'src/context.ts + src/query.ts',
+                dataTransform: 'Messages + Context → API-ready prompt',
+                tools: ['FileReadTool', 'GlobTool'],
+                decisions: [
+                    { condition: 'CLAUDE.md exists', action: 'Include in system prompt' },
+                    { condition: 'Git repo', action: 'Add git status to context' }
+                ]
+            },
+            {
+                title: '4. Provider Selection',
+                description: 'Determine which LLM provider to use based on settings',
+                component: 'src/utils/model/providers.ts',
+                dataTransform: 'Settings → Provider config (baseURL, apiKey, model)',
+                tools: [],
+                decisions: [
+                    { condition: 'CLAUDE_CODE_USE_OPENAI', action: 'Use OpenAI endpoint' },
+                    { condition: 'CLAUDE_CODE_USE_GEMINI', action: 'Use Gemini API' },
+                    { condition: 'Default', action: 'Use Anthropic first-party' }
+                ]
+            },
+            {
+                title: '5. API Request (Query Loop)',
+                description: 'Send request to LLM with streaming enabled',
+                component: 'src/services/api/claude.ts',
+                dataTransform: 'Prompt → Streaming tokens + tool calls',
+                tools: [],
+                decisions: [
+                    { condition: 'Token budget exceeded', action: 'Trigger compaction' },
+                    { condition: 'Rate limited', action: 'Wait and retry' }
+                ]
+            },
+            {
+                title: '6. Tool Detection',
+                description: 'Parse LLM response for tool_use blocks',
+                component: 'src/services/tools/StreamingToolExecutor.ts',
+                dataTransform: 'ToolUseBlock → Tool execution request',
+                tools: [],
+                decisions: [
+                    { condition: 'Tool call detected', action: 'Execute tool' },
+                    { condition: 'Text only', action: 'Display response' }
+                ]
+            },
+            {
+                title: '7. Permission Check',
+                description: 'Validate tool call against permission rules',
+                component: 'src/utils/permissions/permissions.ts',
+                dataTransform: 'Tool + Input → Allow/Deny/Ask decision',
+                tools: [],
+                decisions: [
+                    { condition: 'Rule matches (allow)', action: 'Auto-approve' },
+                    { condition: 'Rule matches (deny)', action: 'Auto-reject' },
+                    { condition: 'No rule match', action: 'Show permission dialog' },
+                    { condition: 'Auto-mode + classifier approve', action: 'Auto-approve' }
+                ]
+            },
+            {
+                title: '8. Tool Execution',
+                description: 'Execute the approved tool with progress tracking',
+                component: 'src/tools/*/index.ts',
+                dataTransform: 'Tool input → Tool result (stdout, file content, etc.)',
+                tools: ['BashTool', 'FileReadTool', 'FileEditTool', 'GrepTool'],
+                decisions: [
+                    { condition: 'Sandbox enabled', action: 'Run in sandbox' },
+                    { condition: 'Dangerous command', action: 'Require explicit approval' }
+                ]
+            },
+            {
+                title: '9. Result Processing',
+                description: 'Convert tool result to API format and add to messages',
+                component: 'src/utils/messages.ts',
+                dataTransform: 'Tool result → ToolResultBlockParam',
+                tools: [],
+                decisions: [
+                    { condition: 'Result > max size', action: 'Persist to disk, send preview' },
+                    { condition: 'Error occurred', action: 'Send error message to model' }
+                ]
+            },
+            {
+                title: '10. Follow-up Request',
+                description: 'Send tool results back to LLM for next iteration',
+                component: 'src/query.ts',
+                dataTransform: 'Messages + Tool results → Next API request',
+                tools: [],
+                decisions: [
+                    { condition: 'Task complete', action: 'Return final response' },
+                    { condition: 'More work needed', action: 'Continue loop' },
+                    { condition: 'Max turns reached', action: 'Stop and report' }
+                ]
+            },
+            {
+                title: '11. Response Rendering',
+                description: 'Display final response in terminal UI',
+                component: 'src/ink/components/Transcript.tsx',
+                dataTransform: 'Assistant message → Rendered terminal output',
+                tools: [],
+                decisions: [
+                    { condition: 'Verbose mode', action: 'Show full details' },
+                    { condition: 'Normal mode', action: 'Show condensed view' }
+                ]
+            }
+        ];
+
+        // Prompt analysis patterns
+        const promptPatterns = {
+            'fix.*bug|debug|error|fail|crash': {
+                tools: ['FileReadTool', 'GrepTool', 'BashTool'],
+                provider: 'high-reasoning',
+                complexity: 'high'
+            },
+            'add.*feature|implement|create.*new': {
+                tools: ['FileReadTool', 'FileWriteTool', 'FileEditTool', 'BashTool'],
+                provider: 'balanced',
+                complexity: 'high'
+            },
+            'delete|remove|rm ': {
+                tools: ['BashTool', 'GlobTool'],
+                provider: 'fast',
+                complexity: 'medium',
+                permissionLevel: 'dangerous'
+            },
+            'explain|understand|how.*work|what.*does': {
+                tools: ['FileReadTool', 'GrepTool', 'GlobTool'],
+                provider: 'fast',
+                complexity: 'low'
+            },
+            'run.*test|test|spec|check': {
+                tools: ['BashTool', 'FileReadTool'],
+                provider: 'balanced',
+                complexity: 'medium'
+            },
+            'git.*commit|commit.*push|push.*git': {
+                tools: ['BashTool'],
+                provider: 'fast',
+                complexity: 'low',
+                permissionLevel: 'review'
+            },
+            'refactor|optimize|improve.*performance': {
+                tools: ['FileReadTool', 'FileEditTool', 'GrepTool', 'BashTool'],
+                provider: 'high-reasoning',
+                complexity: 'high'
+            },
+            'find|search|grep|locate': {
+                tools: ['GrepTool', 'GlobTool', 'FileReadTool'],
+                provider: 'fast',
+                complexity: 'low'
+            }
+        };
+
+        function setPrompt(text) {
+            document.getElementById('promptInput').value = text;
+        }
+
+        function analyzePrompt(prompt) {
+            const lowerPrompt = prompt.toLowerCase();
+            let matchedPattern = null;
+
+            for (const [pattern, config] of Object.entries(promptPatterns)) {
+                if (new RegExp(pattern).test(lowerPrompt)) {
+                    matchedPattern = config;
+                    break;
+                }
+            }
+
+            return matchedPattern || {
+                tools: ['FileReadTool', 'BashTool'],
+                provider: 'balanced',
+                complexity: 'medium'
+            };
+        }
+
+        function getToolsForStage(stageIndex, analysis) {
+            const stageTools = flowStagesData[stageIndex]?.tools || [];
+            if (stageIndex === 7 && analysis.tools) {
+                return [...new Set([...stageTools, ...analysis.tools])];
+            }
+            return stageTools;
+        }
+
+        function simulateFlow() {
+            const prompt = document.getElementById('promptInput').value.trim();
+            if (!prompt) {
+                alert('Please enter a prompt first!');
+                return;
+            }
+
+            const analysis = analyzePrompt(prompt);
+            const stagesContainer = document.getElementById('flowStages');
+            const progressFill = document.getElementById('progressFill');
+            const simulateBtn = document.getElementById('simulateBtn');
+
+            // Clear previous simulation
+            stagesContainer.innerHTML = '';
+            progressFill.style.width = '0%';
+            simulateBtn.disabled = true;
+
+            // Build stages HTML
+            flowStagesData.forEach((stage, index) => {
+                const stageEl = document.createElement('div');
+                stageEl.className = 'flow-stage';
+                stageEl.id = `stage-${index}`;
+
+                const tools = getToolsForStage(index, analysis);
+                const decisions = flowStagesData[index].decisions;
+
+                stageEl.innerHTML = `
+                    <div class="stage-number">${index + 1}</div>
+                    <div class="stage-content">
+                        <div class="stage-title">${stage.title}</div>
+                        <div class="stage-description">${stage.description}</div>
+                        <div class="stage-data">
+                            <span class="data-label">Component:</span> <code>${stage.component}</code><br/>
+                            <span class="data-label">Transform:</span> ${stage.dataTransform}
+                            ${tools.length > 0 ? `<div class="stage-tools">${tools.map(t => `<span class="tool-tag">${t}</span>`).join('')}</div>` : ''}
+                            ${decisions.length > 0 ? `<div style="margin-top: 10px;"><span class="data-label">Decisions:</span><br/>${decisions.map(d => `<div class="stage-decision ${d.action.includes('deny') || d.action.includes('reject') ? 'decision-deny' : d.action.includes('ask') || d.action.includes('review') ? 'decision-ask' : 'decision-allow'}">${d.condition} → ${d.action}</div>`).join('')}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+
+                stagesContainer.appendChild(stageEl);
+
+                // Add arrow between stages (except for last)
+                if (index < flowStagesData.length - 1) {
+                    const arrow = document.createElement('div');
+                    arrow.className = 'flow-arrow';
+                    arrow.id = `arrow-${index}`;
+                    stagesContainer.appendChild(arrow);
+                }
+            });
+
+            // Animate through stages
+            let currentStage = 0;
+            const totalStages = flowStagesData.length * 2 - 1; // stages + arrows
+
+            function animateStage() {
+                if (currentStage >= flowStagesData.length) {
+                    progressFill.style.width = '100%';
+                    simulateBtn.disabled = false;
+                    return;
+                }
+
+                const stageEl = document.getElementById(`stage-${currentStage}`);
+                const arrowEl = document.getElementById(`arrow-${currentStage}`);
+
+                // Activate stage
+                stageEl.classList.add('active');
+                progressFill.style.width = `${((currentStage + 1) / totalStages * 100)}%`;
+
+                setTimeout(() => {
+                    stageEl.classList.remove('active');
+                    stageEl.classList.add('completed');
+
+                    // Activate arrow
+                    if (arrowEl) {
+                        arrowEl.classList.add('active');
+                    }
+
+                    setTimeout(() => {
+                        if (arrowEl) {
+                            arrowEl.classList.remove('active');
+                            arrowEl.classList.add('completed');
+                        }
+                        currentStage++;
+                        progressFill.style.width = `${((currentStage) / totalStages * 100)}%`;
+                        animateStage();
+                    }, 400);
+                }, 1500); // Time to read each stage
+            }
+
+            // Start animation after a brief delay
+            setTimeout(animateStage, 500);
+        }
+
+        // Allow Enter key to trigger simulation
+        document.addEventListener('DOMContentLoaded', function() {
+            const promptInput = document.getElementById('promptInput');
+            if (promptInput) {
+                promptInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        simulateFlow();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

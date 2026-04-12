@@ -19,6 +19,7 @@ import {
   modelSupports1M,
 } from '../context.js'
 import { isEnvTruthy } from '../envUtils.js'
+import { getOllamaApiBaseUrl } from '../providerDiscovery.js'
 import { getModelStrings, resolveOverriddenModel } from './modelStrings.js'
 import { formatModelPricing, getOpus46CostTier } from '../modelCost.js'
 import { getSettings_DEPRECATED } from '../settings/settings.js'
@@ -131,6 +132,10 @@ export function getDefaultOpusModel(): ModelName {
   }
   // OpenAI provider: use user-specified model or default
   if (getAPIProvider() === 'openai') {
+    // Ollama Cloud default
+    if (isEnvTruthy(process.env.CLAUDE_CODE_USE_OPENAI) && process.env.OPENAI_BASE_URL?.includes('ollama.com')) {
+      return process.env.OPENAI_MODEL || 'glm-5.1:cloud'
+    }
     return process.env.OPENAI_MODEL || 'gpt-4o'
   }
   // Codex provider: use user-specified model or default to gpt-5.4

@@ -18,13 +18,15 @@ let fetchPromise: Promise<ModelOption[]> | null = null
 /**
  * Known Ollama cloud models. These always appear in the /model picker
  * so users can discover and select them even before pulling.
+ * Order matters: glm-5.1:cloud is listed first as it's the default.
  */
 const KNOWN_CLOUD_MODELS: Array<{ value: string; label: string; description: string }> = [
+  { value: 'glm-5.1:cloud', label: '☁️ glm-5.1:cloud', description: 'GLM-5.1 (default)' },
+  { value: 'glm-5:cloud', label: '☁️ glm-5:cloud', description: 'GLM-5' },
   { value: 'qwen3.5:397b-cloud', label: '☁️ qwen3.5:397b-cloud', description: 'Qwen 3.5 Coder 480B' },
   { value: 'qwen3.5:cloud', label: '☁️ qwen3.5:cloud', description: 'Qwen 3.5' },
   { value: 'deepseek-v3.2:cloud', label: '☁️ deepseek-v3.2:cloud', description: 'DeepSeek V3.2' },
   { value: 'deepseek-v3:cloud', label: '☁️ deepseek-v3:cloud', description: 'DeepSeek V3' },
-  { value: 'glm-5:cloud', label: '☁️ glm-5:cloud', description: 'GLM-5' },
   { value: 'kimi-k2.5:cloud', label: '☁️ kimi-k2.5:cloud', description: 'Kimi K2.5' },
   { value: 'minimax-m2.5:cloud', label: '☁️ minimax-m2.5:cloud', description: 'MiniMax M2.5' },
   { value: 'minimax-m2.7:cloud', label: '☁️ minimax-m2.7:cloud', description: 'MiniMax M2.7' },
