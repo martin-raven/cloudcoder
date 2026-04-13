@@ -149,10 +149,9 @@ impl ChatSession {
         println!();
         println!("Available commands:");
         println!("  {}  - Exit the session", "/exit".yellow());
-        println!("  {} - Clear the screen", "/clear".yellow());
-        println!("  {}  - List available models", "/models".yellow());
-        println!("  {} <model> - Switch to a model", "/model".yellow());
         println!("  {}  - Show this help", "/help".yellow());
+        println!();
+        println!("Note: More commands coming soon (/model, /models, /clear)");
         println!();
     }
 }
