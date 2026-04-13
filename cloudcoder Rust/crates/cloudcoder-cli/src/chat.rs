@@ -5,9 +5,8 @@
 use std::io::{self, Write};
 
 use colored::Colorize;
-use futures_util::StreamExt;
 
-use cloudcoder_provider::{OllamaProvider, Provider, ChatRequest, ChatMessage};
+use cloudcoder_provider::{OllamaProvider, Provider, ChatRequest, ChatMessage, ContentBlock};
 
 use crate::commands::CommandHandler;
 use crate::tools::ToolRegistry;
@@ -148,53 +147,95 @@ impl ChatSession {
 
     /// Stream response from the model
     async fn stream_response(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let request = self.build_request();
-        let stream_future = self.provider.chat_stream(request);
-        let mut stream = stream_future.await?;
+        const MAX_TOOL_ROUNDS: usize = 10;
+        let mut tool_rounds = 0;
 
-        let mut full_content = String::new();
+        loop {
+            let request = self.build_request().await;
 
-        while let Some(chunk_result) = stream.next().await {
-            match chunk_result {
-                Ok(chunk) => {
-                    // Print thinking dimly
-                    if !chunk.thinking.is_empty() {
-                        print!("{}", chunk.thinking.bright_black());
-                        io::stdout().flush().unwrap();
-                    }
+            // Use non-streaming call for tool support
+            // The Ollama API returns tool_calls in the response object
+            let response = self.provider.chat(request).await?;
 
-                    // Print content normally
-                    if !chunk.content.is_empty() {
-                        print!("{}", chunk.content);
-                        io::stdout().flush().unwrap();
-                        full_content.push_str(&chunk.content);
-                    }
+            let message = response.message;
 
-                    if chunk.is_final {
-                        println!();
-                        break;
-                    }
+            // Extract content and tool calls from the message
+            let (content, tool_calls) = match &message.content {
+                cloudcoder_provider::MessageContent::Text(text) => {
+                    (text.clone(), Vec::new())
                 }
-                Err(e) => {
-                    eprintln!("{}", format!("\nStream error: {}", e).red());
-                    break;
+                cloudcoder_provider::MessageContent::Blocks(blocks) => {
+                    let mut text = String::new();
+                    let mut calls = Vec::new();
+
+                    for block in blocks {
+                        match block {
+                            ContentBlock::Text { text: t } => {
+                                text.push_str(t);
+                            }
+                            ContentBlock::ToolUse { id, name, input } => {
+                                calls.push((id.clone(), name.clone(), input.clone()));
+                            }
+                            _ => {}
+                        }
+                    }
+                    (text, calls)
                 }
+            };
+
+            // Display the content
+            if !content.is_empty() {
+                println!("{}", content);
+            }
+
+            // If no tool calls, we're done
+            if tool_calls.is_empty() {
+                self.messages.push(ChatMessage::assistant(content));
+                break;
+            }
+
+            // Handle tool calls
+            tool_rounds += 1;
+            if tool_rounds > MAX_TOOL_ROUNDS {
+                eprintln!("{}", "Maximum tool call rounds reached.".red());
+                break;
+            }
+
+            // Add the assistant message with tool calls to history
+            self.messages.push(message);
+
+            // Execute each tool call
+            for (tool_id, tool_name, tool_input) in tool_calls {
+                println!("{}", format!("[Executing: {}]", tool_name).bright_cyan());
+
+                let result = self.tool_registry.execute(&tool_name, tool_input).await;
+
+                let (result_content, is_error) = match result {
+                    Ok(output) => (output, false),
+                    Err(e) => (format!("Error: {}", e), true),
+                };
+
+                println!("{}", format!("[Result]: {}", result_content.lines().next().unwrap_or(&result_content)).bright_black());
+
+                // Add tool result to messages
+                self.messages.push(ChatMessage::tool_result(tool_id, result_content, is_error));
             }
         }
 
-        self.messages.push(ChatMessage::assistant(full_content));
         Ok(())
     }
 
     /// Build a chat request
-    fn build_request(&self) -> ChatRequest {
+    async fn build_request(&self) -> ChatRequest {
+        let tools = self.tool_registry.get_tool_definitions();
+
         ChatRequest {
             model: self.model.clone(),
             messages: self.messages.clone(),
             options: None,
             system: self.system_prompt.clone(),
             stream: false,
-            tools: None,
+            tools: Some(tools),
         }
     }
 
@@ -238,11 +279,12 @@ mod tests {
         assert_eq!(session.model, "test-model");
     }
 
-    #[test]
-    fn test_build_request() {
+    #[tokio::test]
+    async fn test_build_request() {
         let session = ChatSession::new();
-        let request = session.build_request();
+        let request = session.build_request().await;
         assert!(!request.model.is_empty());
         assert!(request.messages.is_empty());
+        assert!(request.tools.is_some());
     }
 }
