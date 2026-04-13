@@ -136,6 +136,9 @@ pub struct ProviderConfig {
 pub struct StreamChunk {
     /// Chunk content
     pub content: String,
+    /// Thinking content (model's internal reasoning)
+    #[serde(default)]
+    pub thinking: String,
     /// Whether this is the final chunk
     pub is_final: bool,
     /// Token usage (on final chunk)

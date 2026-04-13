@@ -232,6 +232,11 @@ impl OllamaProvider {
         &self.base_url
     }
 
+    /// Get the default model
+    pub fn default_model(&self) -> &str {
+        &self.default_model
+    }
+
     /// Build request options
     fn build_options(&self, options: Option<&GenerationOptions>) -> Option<OllamaOptions> {
         let opts = options.cloned().unwrap_or_else(|| self.default_options.clone());
@@ -572,6 +577,7 @@ impl Provider for OllamaProvider {
 
                             chunks.push(StreamChunk {
                                 content,
+                                thinking: chunk.thinking.clone(),
                                 is_final: chunk.done,
                                 usage,
                                 finish_reason,
