@@ -26,7 +26,9 @@ This means CloudCoder does NOT need to implement Ollama auth — we just use the
 - `OllamaProvider::cloud()` and `OllamaProvider::local()` → both point to `localhost:11434` (kept for API compat but deprecated)
 - Default model: read from `~/.ollama/config.json` `last_selection` integration, or `glm-5.1:cloud`
 - Add `thinking` field to `OllamaMessageResponse` and `OllamaStreamChunk` — reasoning models (glm-5.1, deepseek, etc.) return thinking tokens in a separate field
+- Add `tool_calls` to `OllamaMessageResponse` — Ollama returns tool calls as `tool_calls[].{id, function.{name, arguments}}` (not ContentBlock::ToolUse like Claude)
 - Fix test: `base_url().contains("api.ollama.cloud")` → assert localhost:11434
+- When converting Ollama response to `ChatMessage`: map `tool_calls` → `ContentBlock::ToolUse { id, name, input }`
 - `is_cloud_model()` helper still valid — used to identify cloud models by `:cloud`/`-cloud` suffix for display purposes
 
 ### 2. ChatSession (cloudcoder-cli, new file: `src/chat.rs`)
@@ -89,11 +91,19 @@ User: "Create a file called hello.txt with 'hello world'"
 → Displayed to user
 ```
 
+**Ollama tool call format:**
+Ollama returns tool calls as `tool_calls[].{id, function.{name, arguments}}` in the message object, NOT as ContentBlock::ToolUse. ChatSession maps these to our internal types:
+- `tool_calls[i].id` → `ToolUse.id`
+- `tool_calls[i].function.name` → `ToolUse.name`
+- `tool_calls[i].function.arguments` → `ToolUse.input` (JSON value)
+
+Tool results are sent back as messages with `role: "tool"` and the tool call ID.
+
 **Tool execution details:**
-- Parse `ContentBlock::ToolUse` from response `message.content`
-- Each tool gets its own `ChatMessage::tool_result`
-- Error results: `is_error: true`, include error message in content
-- Multiple tool calls in one response: execute in parallel where safe, sequentially otherwise
+- Parse `tool_calls` from the Ollama response message
+- Each tool gets its own result message with `role: "tool"`
+- Error results: include error message in content
+- Multiple tool calls in one response: execute sequentially (simpler, avoids race conditions)
 - Maximum tool call rounds: 10 (prevent infinite loops)
 
 ### 4. CLI argument changes (cloudcoder-cli/src/main.rs)
