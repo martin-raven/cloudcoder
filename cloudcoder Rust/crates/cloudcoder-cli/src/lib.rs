@@ -3,7 +3,9 @@
 //! Provides the CLI application and tool implementations.
 
 pub mod chat;
+pub mod commands;
 pub mod tools;
 
 pub use chat::ChatSession;
+pub use commands::CommandHandler;
 pub use tools::*;

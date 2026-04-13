@@ -9,12 +9,15 @@ use futures_util::StreamExt;
 
 use cloudcoder_provider::{OllamaProvider, Provider, ChatRequest, ChatMessage};
 
+use crate::commands::CommandHandler;
 use crate::tools::ToolRegistry;
 
 /// Interactive chat session with Ollama models
 pub struct ChatSession {
     /// The Ollama provider
     provider: OllamaProvider,
+    /// Command handler for slash commands
+    command_handler: CommandHandler,
     /// Conversation history
     messages: Vec<ChatMessage>,
     /// Current model
@@ -30,8 +33,11 @@ impl ChatSession {
     pub fn new() -> Self {
         let provider = OllamaProvider::cloud();
         let model = provider.default_model().to_string();
+        let command_handler = CommandHandler::new(provider.clone());
+
         Self {
             provider,
+            command_handler,
             messages: Vec::new(),
             model,
             tool_registry: ToolRegistry::new(),
@@ -68,20 +74,68 @@ impl ChatSession {
             }
 
             if input.starts_with('/') {
-                match input {
-                    "/exit" | "/quit" | "/q" => {
-                        println!("{}", "Goodbye!".bright_blue());
-                        break;
-                    }
-                    "/help" => {
-                        self.print_help();
-                        continue;
-                    }
-                    _ => {
-                        println!("Unknown command. Type /help for available commands.");
-                        continue;
-                    }
+                // Handle /exit, /quit, /q
+                if input == "/exit" || input == "/quit" || input == "/q" {
+                    println!("{}", "Goodbye!".bright_blue());
+                    break;
                 }
+
+                // Handle /help
+                if input == "/help" {
+                    self.print_help();
+                    continue;
+                }
+
+                // Handle /models
+                if input == "/models" {
+                    self.command_handler.list_models(&self.model).await;
+                    continue;
+                }
+
+                // Handle /model <name> or /model (to list)
+                if input.starts_with("/model") {
+                    let args = input.strip_prefix("/model").unwrap_or("").trim();
+                    if args.is_empty() {
+                        self.command_handler.list_models(&self.model).await;
+                    } else {
+                        match self.command_handler.switch_model(&self.model, args).await {
+                            Ok(new_model) => {
+                                self.model = new_model;
+                                self.messages.clear();
+                                println!("{}", "Conversation cleared for new model.".bright_blue());
+                            }
+                            Err(e) => eprintln!("{}", e.red()),
+                        }
+                    }
+                    continue;
+                }
+
+                // Handle /clear
+                if input == "/clear" {
+                    self.messages.clear();
+                    println!("{}", "Conversation cleared.".bright_blue());
+                    continue;
+                }
+
+                // Handle /system
+                if input.starts_with("/system") {
+                    let prompt = input.strip_prefix("/system").unwrap_or("").trim();
+                    if prompt.is_empty() {
+                        match &self.system_prompt {
+                            Some(p) => println!("Current system prompt: {}", p),
+                            None => println!("{}", "No system prompt set.".bright_blue()),
+                        }
+                    } else {
+                        self.system_prompt = Some(prompt.to_string());
+                        println!("{}", "System prompt set.".bright_blue());
+                    }
+                    continue;
+                }
+
+                // Unknown command
+                println!("Unknown command: {}", input.yellow());
+                println!("Type {} for available commands.", "/help".yellow());
+                continue;
             }
 
             self.messages.push(ChatMessage::user(input));
@@ -147,11 +201,17 @@ impl ChatSession {
     /// Print available commands
     fn print_help(&self) {
         println!();
-        println!("Available commands:");
-        println!("  {}  - Exit the session", "/exit".yellow());
-        println!("  {}  - Show this help", "/help".yellow());
+        println!("{}", "Available Commands".bright_blue().bold());
+        println!("{}", "─".repeat(40));
         println!();
-        println!("Note: More commands coming soon (/model, /models, /clear)");
+        println!("  {:<15} - Exit the session", "/exit".yellow());
+        println!("  {:<15} - Show this help", "/help".yellow());
+        println!("  {:<15} - List available models", "/models".yellow());
+        println!("  {:<15} - Switch to model (clears history)", "/model <name>".yellow());
+        println!("  {:<15} - Clear conversation history", "/clear".yellow());
+        println!("  {:<15} - Set/view system prompt", "/system [prompt]".yellow());
+        println!();
+        println!("{} {}", "Current model:".bright_black(), self.model.bright_blue());
         println!();
     }
 }
