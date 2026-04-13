@@ -1,0 +1,33 @@
+[package]
+name = "cloudcoder-cli"
+version.workspace = true
+edition.workspace = true
+default-run = "cloudcoder"
+
+[[bin]]
+name = "cloudcoder"
+path = "src/main.rs"
+
+[dependencies]
+cloudcoder-core = { workspace = true }
+cloudcoder-services = { workspace = true }
+cloudcoder-provider = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+uuid = { workspace = true }
+futures-util = { workspace = true }
+
+# Additional CLI dependencies
+clap = { version = "4", features = ["derive", "env"] }
+colored = "2"
+indicatif = "0.17"
+dirs = "5"
+reqwest = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"
