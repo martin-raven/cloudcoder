@@ -255,12 +255,8 @@ impl OllamaProvider {
     }
 
     /// Parse finish reason from response
-    fn parse_finish_reason(&self, response: &OllamaResponse) -> FinishReason {
-        if response.done {
-            FinishReason::Stop
-        } else {
-            FinishReason::Stop
-        }
+    fn parse_finish_reason(&self, _response: &OllamaResponse) -> FinishReason {
+        FinishReason::Stop // Ollama always uses Stop for now
     }
 
     /// Update metrics
