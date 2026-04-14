@@ -286,6 +286,21 @@ pub struct WorkerProcess {
     stdout_buffer: VecDeque<String>,
 }
 
+impl std::fmt::Debug for WorkerProcess {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("WorkerProcess")
+            .field("id", &self.id)
+            .field("description", &self.description)
+            .field("child", &self.child.as_ref().map(|_| "Child"))
+            .field("status", &self.status)
+            .field("started_at", &self.started_at)
+            .field("started_instant", &"<instant>")
+            .field("timeout_duration", &self.timeout_duration)
+            .field("stdout_buffer_len", &self.stdout_buffer.len())
+            .finish()
+    }
+}
+
 impl WorkerProcess {
     /// Get the worker ID
     pub fn id(&self) -> &str {
@@ -327,6 +342,34 @@ impl WorkerProcess {
     /// Get the timestamp when the worker started
     pub fn started_at(&self) -> u64 {
         self.started_at
+    }
+
+    /// Set the worker status (for use by registry)
+    pub fn set_status(&mut self, status: WorkerStatus) {
+        self.status = status;
+    }
+
+    /// Create a WorkerProcess for testing purposes only
+    ///
+    /// This creates a worker without spawning a process, useful for unit tests.
+    #[cfg(test)]
+    pub fn test_new(id: &str, description: &str) -> Self {
+        use std::time::SystemTime;
+        let started_at = SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+
+        Self {
+            id: id.to_string(),
+            description: description.to_string(),
+            child: None,
+            status: WorkerStatus::Running,
+            started_at,
+            started_instant: Instant::now(),
+            timeout_duration: Duration::from_secs(60),
+            stdout_buffer: VecDeque::new(),
+        }
     }
 }
 
