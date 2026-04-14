@@ -4,8 +4,10 @@
 
 pub mod chat;
 pub mod commands;
+pub mod coordinator;
 pub mod tools;
 
 pub use chat::ChatSession;
 pub use commands::CommandHandler;
+pub use coordinator::*;
 pub use tools::*;

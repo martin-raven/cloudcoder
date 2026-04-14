@@ -25,6 +25,7 @@ futures-util = { workspace = true }
 # Additional CLI dependencies
 clap = { version = "4", features = ["derive", "env"] }
 colored = "2"
+quick-xml = { version = "0.31", features = ["serialize"] }
 indicatif = "0.17"
 dirs = "5"
 reqwest = { workspace = true }
