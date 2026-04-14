@@ -202,7 +202,7 @@ pub async fn spawn_worker_listener(
         let mut poll_interval = interval(Duration::from_millis(100));
 
         loop {
-            poll_interval.tick(). mark();
+            poll_interval.tick().await;
 
             // Check all running workers
             let running_workers = registry.list_running();
@@ -352,7 +352,7 @@ impl ChatSession {
         while let Ok(notification) = self.notification_rx.try_recv() {
             let xml = to_xml(&notification);
             // Inject as synthetic user message
-            self.messages.push(ChatMessage::user xml));
+            self.messages.push(ChatMessage::user(&xml));
         }
     }
 }
@@ -369,7 +369,7 @@ You are a coordinator. Your job is to:
 - Help the user achieve their goal
 - Direct workers to research, implement and verify code changes
 - Synthesize results and communicate with the user
-- Answer questions directly when possible --- don't delefate work that you can handle without tools
+- Answer questions directly when possible — don't delegate work that you can handle without tools
 
 ## 2. Your Tools
 
