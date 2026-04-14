@@ -115,7 +115,7 @@ pub enum FinishReason {
 }
 
 /// Provider configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ProviderConfig {
     /// Base URL for API
     pub base_url: Option<String>,

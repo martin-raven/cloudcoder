@@ -4,6 +4,7 @@
 //! Both cloud and local models are accessed through the same local proxy endpoint.
 
 use std::pin::Pin;
+use std::sync::Arc;
 use std::time::Instant;
 
 use async_trait::async_trait;
@@ -161,6 +162,7 @@ struct OllamaListResponse {
 }
 
 /// Ollama provider
+#[derive(Clone)]
 pub struct OllamaProvider {
     /// Base URL for API
     base_url: String,
@@ -171,7 +173,7 @@ pub struct OllamaProvider {
     /// Default generation options
     default_options: GenerationOptions,
     /// Metrics
-    metrics: RwLock<ProviderMetrics>,
+    metrics: Arc<RwLock<ProviderMetrics>>,
 }
 
 impl OllamaProvider {
@@ -202,6 +204,14 @@ impl OllamaProvider {
         Self::cloud()
     }
 
+    /// Create provider with a specific model
+    pub fn with_model(model: impl Into<String>) -> Self {
+        Self::with_config(ProviderConfig {
+            default_model: Some(model.into()),
+            ..Default::default()
+        })
+    }
+
     /// Create provider with custom configuration
     pub fn with_config(config: ProviderConfig) -> Self {
         let base_url = config.base_url.unwrap_or_else(|| DEFAULT_OLLAMA_URL.to_string());
@@ -223,7 +233,7 @@ impl OllamaProvider {
             client,
             default_model,
             default_options: config.default_options.unwrap_or_default(),
-            metrics: RwLock::new(ProviderMetrics::default()),
+            metrics: Arc::new(RwLock::new(ProviderMetrics::default())),
         }
     }
 

@@ -59,6 +59,41 @@ enum Commands {
         #[command(subcommand)]
         action: ConfigCommands,
     },
+
+    /// Run as an agent/worker for coordinator mode
+    Agent {
+        /// Worker ID
+        #[arg(long)]
+        id: Option<String>,
+
+        /// Continue from existing worker ID (SendMessage)
+        #[arg(long)]
+        continue_from: Option<String>,
+
+        /// Task description
+        #[arg(short, long)]
+        description: String,
+
+        /// Task prompt/instructions
+        #[arg(short = 'p', long)]
+        prompt: String,
+
+        /// Run as worker (output XML notification on completion)
+        #[arg(long, default_value = "false")]
+        is_worker: bool,
+
+        /// Model to use
+        #[arg(long)]
+        model: Option<String>,
+
+        /// System prompt
+        #[arg(long)]
+        system: Option<String>,
+
+        /// Timeout in milliseconds
+        #[arg(long, default_value = "300000")]
+        timeout_ms: u64,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -144,6 +179,25 @@ async fn main() {
         }
         Some(Commands::Config { action }) => {
             handle_config_command(action).await;
+        }
+        Some(Commands::Agent { id, continue_from, description, prompt, is_worker, model, system, timeout_ms }) => {
+            // Build agent args directly
+            let agent_args = cloudcoder_cli::commands::agent::AgentArgs {
+                id,
+                continue_from,
+                description,
+                prompt,
+                is_worker,
+                model,
+                system,
+                timeout_ms,
+            };
+
+            // Run agent command (worker mode or standalone)
+            if let Err(e) = cloudcoder_cli::run_agent_command(agent_args).await {
+                eprintln!("{}", format!("Agent error: {}", e).red());
+                std::process::exit(1);
+            }
         }
         None => {
             // Default: start chat session
