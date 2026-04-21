@@ -110,7 +110,7 @@ async function main(): Promise<void> {
     process.env.CLAUDE_CODE_USE_OPENAI = '1'
     process.env.OPENAI_BASE_URL ??= 'http://localhost:11434/v1'
     process.env.OPENAI_API_KEY ??= 'ollama'
-    process.env.OPENAI_MODEL ??= 'glm-5:cloud'
+    process.env.OPENAI_MODEL ??= 'glm-5.1:cloud'
   }
 
   {
