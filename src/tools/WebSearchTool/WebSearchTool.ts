@@ -7,6 +7,11 @@ import type { PermissionResult } from 'src/utils/permissions/PermissionResult.js
 
 import { z } from 'zod/v4'
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js'
+import {
+  ensureSearXNGRunning,
+  searchSearXNG as searchSearXNGService,
+  shouldUseSearXNG,
+} from '../../services/searxng.js'
 import { queryModelWithStreaming } from '../../services/api/claude.js'
 import { collectCodexCompletedResponse } from '../../services/api/codexShim.js'
 import {
@@ -190,6 +195,46 @@ async function runDuckDuckGoSearch(input: Input): Promise<Output> {
       query: input.query,
       results: [
         'Web search temporarily unavailable — try again or add a Firecrawl API key for reliable results.',
+      ],
+      durationSeconds: (performance.now() - startTime) / 1000,
+    }
+  }
+}
+
+async function runSearXNGSearch(input: Input): Promise<Output> {
+  const startTime = performance.now()
+
+  try {
+    const results = await searchSearXNGService(input.query, {
+      allowed_domains: input.allowed_domains,
+      blocked_domains: input.blocked_domains,
+    })
+
+    const searchResults: SearchResult = {
+      tool_use_id: 'searxng-search',
+      content: results.map((r) => ({
+        title: r.title,
+        url: r.url,
+      })),
+    }
+
+    const snippets = results
+      .filter((r) => r.content)
+      .map((r) => `**${r.title}** — ${r.content!.slice(0, 200)} (${r.url})`)
+      .join('\n')
+
+    const output: Output = {
+      query: input.query,
+      results: [snippets, searchResults].filter(Boolean),
+      durationSeconds: (performance.now() - startTime) / 1000,
+    }
+
+    return output
+  } catch (error) {
+    return {
+      query: input.query,
+      results: [
+        `SearXNG search failed: ${error instanceof Error ? error.message : String(error)}. Run /host_websearch to diagnose.`,
       ],
       durationSeconds: (performance.now() - startTime) / 1000,
     }
@@ -534,6 +579,10 @@ export const WebSearchTool = buildTool({
     return summary ? `Searching for ${summary}` : 'Searching the web'
   },
   isEnabled() {
+    if (shouldUseSearXNG()) {
+      return true
+    }
+
     if (shouldUseFirecrawl()) {
       return true
     }
@@ -602,6 +651,7 @@ export const WebSearchTool = buildTool({
   },
   async prompt() {
     if (
+      shouldUseSearXNG() ||
       shouldUseDuckDuckGo() ||
       shouldUseFirecrawl() ||
       isCodexResponsesWebSearchEnabled()
@@ -642,6 +692,18 @@ export const WebSearchTool = buildTool({
     return { result: true }
   },
   async call(input, context, _canUseTool, _parentMessage, onProgress) {
+    // Try to ensure SearXNG is running (auto-start once per session)
+    await ensureSearXNGRunning()
+
+    // SearXNG — highest priority
+    if (shouldUseSearXNG()) {
+      try {
+        return { data: await runSearXNGSearch(input) }
+      } catch {
+        // Fall through to next backend on SearXNG error
+      }
+    }
+
     if (shouldUseFirecrawl()) {
       return { data: await runFirecrawlSearch(input) }
     }

@@ -23,6 +23,7 @@ import doctor from './commands/doctor/index.js'
 import onboardGithub from './commands/onboard-github/index.js'
 import memory from './commands/memory/index.js'
 import help from './commands/help/index.js'
+import hostWebsearch from './commands/host_websearch/index.js'
 import ide from './commands/ide/index.js'
 import init from './commands/init.js'
 import initVerifiers from './commands/init-verifiers.js'
@@ -284,6 +285,7 @@ const COMMANDS = memoize((): Command[] => [
   files,
   heapDump,
   help,
+  hostWebsearch,
   ide,
   init,
   keybindings,
